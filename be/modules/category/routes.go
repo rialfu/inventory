@@ -16,5 +16,6 @@ func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 		routes.GET("/", controller.ReadAll)
 		routes.POST("/", controller.Create)
 		routes.PUT("/:id", controller.Update)
+		routes.GET("/dropdown", controller.DropDownValue)
 	}
 }

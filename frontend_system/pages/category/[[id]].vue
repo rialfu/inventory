@@ -3,7 +3,39 @@
         <h1 class="text-3xl font-bold mb-6 text-slate-600">Merk</h1>
         <div class="bg-white  p-6 rounded-lg shadow-md">
             <h3 class="text-lg font-semibold text-gray-700 mb-4">List data</h3>
-            <NuxtLink to="/merk/create" class="bg-green-600 px-2 py-2 rounded text-gray-100">Create</NuxtLink>
+            <NuxtLink to="/category/create" class="bg-green-600 px-2 py-2 rounded text-gray-100">Create</NuxtLink>
+            
+            <div v-if="parent.length > 0" class="flex items-center mt-5 flex-wrap">
+  
+                <NuxtLink
+                    to="/category"
+                    class="hover:text-blue-600 transition-colors"
+                >
+                    Main
+                </NuxtLink>
+
+                <span class="mx-2 text-gray-400">/</span>
+
+                <template v-for="(item, index) in parent" :key="index">
+                    
+                    <NuxtLink
+                    v-if="index !== parent.length - 1"
+                    :to="`/category/${item.id}`"
+                    class="hover:text-blue-600 transition-colors"
+                    >
+                    {{ item.name }}
+                    </NuxtLink>
+                    
+                    <span v-else class="text-gray-900 font-medium">
+                    {{ item.name }}
+                    </span>
+
+                    <span v-if="index < parent.length - 1" class="mx-2 text-gray-400">
+                    /
+                    </span>
+                    
+                </template>
+            </div>
             <table class="mt-5 min-w-full divide-y divide-gray-200 ">
                 <thead class="divide-y divide-gray-700 border-b border-gray-200">
                     <tr class="border-b border-gray-200 divide-x divide-gray-200">
@@ -90,6 +122,14 @@
                 }
                 if(res['data']['total'] !=undefined){
                     totalItems.value = res['data']['total']
+                }
+                if(res['data']['path'] !=undefined){
+                    let names = res['data']['path'].split("/")
+                    names = names.map((data)=>{
+                        let spl = data.split("-")
+                        return {'id':spl[0], "name":spl[1]}
+                    })
+                    parent.value = names
                 }
                
             }

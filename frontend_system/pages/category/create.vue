@@ -41,6 +41,11 @@
                         ]" 
                         id="name" type="text" placeholder="Name" @input="changeValue" v-model="name">
                     <p class="text-red-500 text-xs italic" v-show=" messageError['name'] !== undefined && messageError['name'] !== ''">{{messageError['name']}}</p>
+                    <Dropdown
+                        v-model="selectedId" 
+                        placeholder="Cari kategori produk..." 
+                        url="/category/dropdown"
+                    />
                 </div>
                 
                 <div class="flex items-center justify-between">
@@ -55,6 +60,8 @@
 </template>
 
 <script setup>
+import Dropdown from '~/components/Dropdown.vue';
+
 
     const { $api } = useNuxtApp();
     
@@ -62,6 +69,7 @@
     const success = ref(false)
     const router = useRouter();
     const messageError = ref({'name':'', 'message':[]})
+    const selectedId = ref(null)
     definePageMeta({
         layout: 'base'
     });

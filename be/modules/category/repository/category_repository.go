@@ -142,6 +142,9 @@ func (r *categoryRepository) ReadAll(ctx context.Context, queryParam map[string]
 	var total int64
 	if parentId != nil {
 		db = db.Where("parent_id = ?", parentId)
+	} else {
+		// fmt.Println("jalan kosong")
+		db = db.Where("parent_id IS NULL")
 	}
 	if err := db.Find(&data).Error; err != nil {
 		return []entities.Category{}, 0, 0, 0, err
@@ -155,7 +158,7 @@ func (r *categoryRepository) ReadAll(ctx context.Context, queryParam map[string]
 func (r *categoryRepository) ReadDropdown(ctx context.Context, search string, limit int, page int) ([]entities.Category, error) {
 	db := r.getDB(ctx)
 	if search != "" {
-		db = db.Where("name = ?", search)
+		db = db.Where("name LIKE ?", "%"+search+"%")
 	}
 	if limit > 100 {
 		limit = 100
@@ -165,6 +168,7 @@ func (r *categoryRepository) ReadDropdown(ctx context.Context, search string, li
 	if page < 1 {
 		page = 1
 	}
+
 	db = db.Order("depth asc").Order("parent_id NULLS FIRST").Order("name asc")
 	var data []entities.Category
 	offset := (page - 1) * limit

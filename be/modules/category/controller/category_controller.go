@@ -8,6 +8,7 @@ import (
 	"rialfu/wallet/pkg/constants"
 	"rialfu/wallet/pkg/helpers"
 	"rialfu/wallet/pkg/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -19,6 +20,7 @@ type (
 		Update(ctx *gin.Context)
 		Create(ctx *gin.Context)
 		ReadAll(ctx *gin.Context)
+		DropDownValue(ctx *gin.Context)
 	}
 
 	categoryController struct {
@@ -138,4 +140,20 @@ func (c *categoryController) Create(ctx *gin.Context) {
 	}
 	res = utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_UPDATE_DATA, data)
 	ctx.JSON(status, res)
+}
+func (c *categoryController) DropDownValue(ctx *gin.Context) {
+	search := ctx.Query("search")
+	pageString := ctx.Query("page")
+	page, err := strconv.Atoi(pageString)
+	if err != nil {
+		page = 1
+	}
+	data, err := c.service.GetDropdown(ctx, search, page)
+	if err != nil {
+		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, err.Error(), nil)
+		ctx.AbortWithStatusJSON(500, res)
+		return
+	}
+	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_LIST_DATA, data)
+	ctx.JSON(200, res)
 }
