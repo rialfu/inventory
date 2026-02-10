@@ -21,6 +21,7 @@ type (
 		Create(ctx *gin.Context)
 		ReadAll(ctx *gin.Context)
 		DropDownValue(ctx *gin.Context)
+		Get(ctx *gin.Context)
 	}
 
 	categoryController struct {
@@ -156,4 +157,29 @@ func (c *categoryController) DropDownValue(ctx *gin.Context) {
 	}
 	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_LIST_DATA, data)
 	ctx.JSON(200, res)
+}
+func (c *categoryController) Get(ctx *gin.Context) {
+	var res utils.Response
+	var status int
+	id := ctx.Param("id")
+	if id == "" {
+		res = utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_DATA, dto.CategoryResponse{})
+		ctx.AbortWithStatusJSON(http.StatusNotFound, res)
+		return
+	}
+	data, err := c.service.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, constants.ErrDataNotFound) {
+			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, data)
+			status = 404
+		} else {
+			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA, err.Error(), nil)
+			status = 500
+		}
+
+		ctx.JSON(status, res)
+		return
+	}
+	res = utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_DATA, data)
+	ctx.JSON(http.StatusOK, res)
 }

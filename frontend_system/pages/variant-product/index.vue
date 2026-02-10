@@ -84,7 +84,7 @@
     },{deep:true})
     onMounted(() => {
         fetchData()
-        console.log(`the component is now mounted.`)
+        
     })
 </script>
 

@@ -16,7 +16,7 @@ type (
 	CategoryResponse struct {
 		ID       uint64  `json:"id"`
 		Name     string  `json:"name"`
-		Path     string  `json:"path"`
+		Path     *string `json:"path"`
 		ParentID *uint64 `json:"parent_id"`
 	}
 

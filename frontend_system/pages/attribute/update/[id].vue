@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1 class="text-3xl font-bold mb-6">Create Category</h1>
+        <h1 class="text-3xl font-bold mb-6">Update Attribute</h1>
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
            
             <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4"><span @click="goBack" class="cursor-pointer">←</span> Form</h3>
@@ -26,7 +26,7 @@
 
                 <h3 class="font-bold text-lg mb-2">Notification</h3>
                 <ul class="list-disc list-inside p-0 m-0 text-sm">
-                    <li class="mb-1" >Success Create</li>
+                    <li class="mb-1" >Success Update</li>
                 </ul>
             </div>
             <form class="" @submit.prevent>
@@ -37,18 +37,6 @@
                         id="name"
                         placeholder="Please fill category name"
                         :error="state.message.name"
-                    />
-                </div>
-                <div class="mb-4">
-                    <Dropdown
-                        v-model="state.form.parent_id" 
-                        placeholder="Find Main Category " 
-                        url="/category/dropdown"
-                        id-value="id",
-                        text="name"
-                        @selected="selectedValue"
-                        label="Main Category (optional)"
-                        :input-id="state.message.parent_id"
                     />
                 </div>
                 
@@ -63,7 +51,8 @@
 </template>
 
 <script setup>
-import { form } from '#build/ui';
+import { isStatement } from 'typescript';
+
 
     definePageMeta({
         layout: 'base'
@@ -76,10 +65,14 @@ import { form } from '#build/ui';
     
     // const name = ref('')
     const success = ref(false)
-    const router = useRouter();
-    // const messageError = ref({'name':'', 'message':[]})
+    const route = useRoute();
+    const router = useRouter()
+    const id = route.params.id
+    // console.log(route.params)
+    
     const state = reactive({
         form: {
+            id:null,
             name: '',
             parent_id: null, 
             selected_label:'',
@@ -90,7 +83,7 @@ import { form } from '#build/ui';
             
         },
         listMessage:[],
-        load:true
+        load:false
     })
     
     function goBack(){
@@ -114,6 +107,9 @@ import { form } from '#build/ui';
     function selectedValue(item){
 
     }
+    function preventDefaultProcess(){
+
+    }
     async function save() {
         resetMessageAll()
         try {
@@ -122,27 +118,22 @@ import { form } from '#build/ui';
                 return
             }
             let body = { name: state.form.name }
-            if(state.form.parent_id !== "" && state.form.parent_id !== null){
-                body['parent_id'] =state.form.parent_id+""
-            }
-            const data1 = await $api('category/',{
-                method:'POST',
+            
+            const data = await $api('attribute/'+state.form.id,{
+                method:'PUT',
                 body,
             });
             
             success.value = true
         } catch (error) {
             console.log(error.data)
-            if(error.data['error'] !== undefined && (error.data['error']['Name'] != undefined || error.data['error']['parent'] != undefined)){
+            if(error.data['error'] !== undefined && error.data['error']['Name'] != undefined){
                 // err = error.data['error']
                 if(error.data['error']['Name'] != undefined){
                     state.message.name = error.data['error']['Name']
                     state.listMessage = [...state.listMessage, "Name "+error.data['error']['Name']]
                 }
-                if(error.data['error']['parent'] != undefined){
-                    state.message.parent_id = error.data['error']['parent']
-                    state.listMessage = [...state.listMessage, "Main Category "+error.data['error']['parent']]
-                }
+                
 
                 
             
@@ -155,8 +146,34 @@ import { form } from '#build/ui';
             success.value = false;
         }
     }
+    async function fetch(){
+        try{
+            if (state.load) return
+            state.load = true
+            const res = await $api('attribute/'+id,{
+                method:'GET',
+            });
+            const resData = res['data']
+            console.log(resData)
+            if (resData['id'] != undefined){
+                state.form.id = resData['id']
+                
+            }
+            if (resData['name'] != undefined){
+                state.form.name = resData['name']
+                
+            }
+            console.log(res)
+        }catch(err){
+            console.log(err)
+        }finally{
+            // await delay(5000);
+           state.load = false
+        }
+        
+    }
     onMounted(() => {
-        state.load = false
+        fetch()
     })
 </script>
 

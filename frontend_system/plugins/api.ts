@@ -38,7 +38,7 @@ export default defineNuxtPlugin((nuxtApp) => {
             }
         }
     });
-
+    
     // Daftarkan $api sebagai helper global di NuxtApp
     nuxtApp.provide('api', $api);
 });

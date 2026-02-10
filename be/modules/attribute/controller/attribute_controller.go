@@ -17,6 +17,7 @@ import (
 
 type (
 	AttributeController interface {
+		GetAttributeName(ctx *gin.Context)
 		GetAllDataAttributeName(ctx *gin.Context)
 		CreateAttributeName(ctx *gin.Context)
 		UpdateAttributeName(ctx *gin.Context)
@@ -48,6 +49,33 @@ func (c *attributeController) GetAllDataAttributeName(ctx *gin.Context) {
 		return
 	}
 	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_LIST_DATA, data)
+	ctx.JSON(http.StatusOK, res)
+}
+func (c *attributeController) GetAttributeName(ctx *gin.Context) {
+	id := ctx.Param("parent")
+	if id == "" {
+		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
+		status := http.StatusNotFound
+		ctx.AbortWithStatusJSON(status, res)
+		return
+	}
+
+	data, err := c.service.GetAttributeName(ctx, id)
+	if err != nil {
+		var res utils.Response
+		var status int
+		if errors.Is(err, constants.ErrDataNotFound) {
+			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
+			status = 404
+		} else {
+			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA, err.Error(), nil)
+			status = 500
+		}
+
+		ctx.AbortWithStatusJSON(status, res)
+		return
+	}
+	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_DATA, data)
 	ctx.JSON(http.StatusOK, res)
 }
 
@@ -141,7 +169,13 @@ func (c *attributeController) UpdateAttributeName(ctx *gin.Context) {
 		return
 	}
 
-	id := ctx.Param("id")
+	id := ctx.Param("parent")
+	if id == "" {
+		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
+		status := http.StatusNotFound
+		ctx.AbortWithStatusJSON(status, res)
+		return
+	}
 	result, err := c.service.UpdateAttributeName(ctx.Request.Context(), req, id)
 	if err != nil {
 		var res utils.Response

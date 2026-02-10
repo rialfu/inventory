@@ -1,9 +1,22 @@
 <template>
     <div>
-        <h1 class="text-3xl font-bold mb-6">Update Merk</h1>
+        <h1 class="text-3xl font-bold mb-6">Update Category</h1>
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
            
             <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4"><span @click="goBack" class="cursor-pointer">←</span> Form</h3>
+            <div class="relative bg-red-600 text-white p-4 rounded-lg shadow-md max-w-sm" v-show="(state.listMessage ?? []).length > 0">
+                <button class="absolute top-2 right-2 text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" @click="closeButton">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+
+                <h3 class="font-bold text-lg mb-2">Validation Error!</h3>
+                <ul class="list-disc list-inside p-0 m-0 text-sm">
+                    <li class="mb-1" v-for="(data, index) in (state.listMessage ?? []) " :key="index">{{data}}</li>
+                    
+                </ul>
+            </div>
             <div class="relative bg-green-600 text-white p-4 rounded-lg shadow-md max-w-sm" v-show="success">
                 <button class="absolute top-2 right-2 text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" @click="closeButtonSuccess">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -14,158 +27,183 @@
                 <h3 class="font-bold text-lg mb-2">Notification</h3>
                 <ul class="list-disc list-inside p-0 m-0 text-sm">
                     <li class="mb-1" >Success Update</li>
-                    
                 </ul>
             </div>
-            <div class="relative bg-red-600 text-white p-4 rounded-lg shadow-md max-w-sm" v-show="(messageError['message'] ?? []).length > 0">
-                <button class="absolute top-2 right-2 text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" @click="closeButton">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-
-                <h3 class="font-bold text-lg mb-2">Validation Error!</h3>
-                <ul class="list-disc list-inside p-0 m-0 text-sm">
-                    <li class="mb-1" v-for="(data, index) in (messageError['message'] ?? []) " :key="index">{{data}}</li>
-                    
-                </ul>
-            </div>
-            
-            <form class="">
+            <form class="" @submit.prevent>
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
-                        Name
-                    </label>
-                    <input 
-                    :class="[
-                            'border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all', 
-                            (messageError['name'] ? 'border-red-500' : 'border-gray-300')
-                        ]"  id="name" type="text" placeholder="Name" @input="changeValue" v-model="nameVal">
-                    <p class="text-red-500 text-xs italic" v-show=" messageError['name'] !== undefined && messageError['name'] !== ''">{{messageError['name']}}</p>
+                    <CustomInput
+                        v-model="state.form.name"
+                        label="Name"
+                        id="name"
+                        placeholder="Please fill category name"
+                        :error="state.message.name"
+                    />
+                </div>
+                <div class="mb-4">
+                    <Dropdown
+                        v-model="state.form.parent_id" 
+                        placeholder="Find Main Category " 
+                        url="/category/dropdown"
+                        id-value="id",
+                        text="name"
+                        @selected="selectedValue"
+                        label="Main Category (optional)"
+                        :input-id="state.message.parent_id"
+                        :default-name="state.form.selected_label"
+                    />
                 </div>
                 
-                <div class="flex items-center justify-between">
-                    <button 
-                    :class="[
-    'font-bold py-2 px-4 rounded focus:outline-none transition-colors duration-200',
-    isLoad 
-      ? 'bg-blue-100 text-blue-400 cursor-not-allowed' 
-      : 'bg-blue-500 hover:bg-blue-700 text-white shadow-md'
-  ]"
-                     @click="save" :disabled="isLoad === true"  type="button">
-                        <div class="flex items-center justify-center gap-2">
-                            <svg v-if="isLoad" class="animate-spin h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            
-                            <span>{{ isLoad ? 'Load / Process ...' : 'Save' }}</span>
-                        </div>
-                    </button>
+                <CustomButtonForm
+                    :is-load="state.load"
+                    @save="save"
+                />
                 
-                </div>
             </form>
         </div>
     </div>
 </template>
 
 <script setup>
+import { isStatement } from 'typescript';
 
-    const { $api } = useNuxtApp();
-    
-    const nameVal = ref('')
-    const success = ref(false)
-    const isLoad = ref(false)
-    const router = useRouter();
-    const route = useRoute()
-    const id = route.params.id
-    // const { id, name} = route.query
-    const messageError = ref({'name':'', 'message':[]})
+
     definePageMeta({
         layout: 'base'
     });
-    function changeValue(value){
-        messageError.value = {
-            'name':'',
-            'message':messageError.value['message']
-        }
-    }
+// import CustomInput from '~/components/CustomInput.vue';
+// import Dropdown from '~/components/Dropdown.vue';
+
+
+    const { $api } = useNuxtApp();
+    
+    // const name = ref('')
+    const success = ref(false)
+    const route = useRoute();
+    const router = useRouter()
+    const id = route.params.id
+    // console.log(route.params)
+    
+    const state = reactive({
+        form: {
+            id:null,
+            name: '',
+            parent_id: null, 
+            selected_label:'',
+        },
+        message: {
+            name: '',
+            parent_id: '',
+            
+        },
+        listMessage:[],
+        load:false
+    })
+    
     function goBack(){
-        console.log('test')
+        
         router.back();
     }
+
     function closeButtonSuccess(){
-        success.value = false
+        success.value = false;
+    }
+    function resetMessageAll(){
+        state.message = {
+            name: '',
+            parent_id: '',
+        }
+        state.listMessage = []
     }
     function closeButton(){
-        messageError.value = {
-            'name':messageError.value['name'],
-            'message':[]
-        }
+        resetMessageAll() 
+    }
+    function selectedValue(item){
+
+    }
+    function preventDefaultProcess(){
+
     }
     async function save() {
-        if (isLoad.value) return
-        if(nameVal.value == ''){
-            messageError.value = {
-                'name':'Please fill name',
-                'message':messageError.value['message']
-            }
-            return
-        }
-        
+        resetMessageAll()
         try {
-            isLoad.value = true
-            // if(isNaN(parseInt(id))) return;
-            const data1 = await $api('merk/'+id,{
-                method:'PUT',
-                
-                body:{ name:nameVal.value }
-            });
-            messageError.value = {
-                'name':'',
-                'message':[]
+            if (state.form.name == ""){
+                state.message.name = "Please fill form"
+                return
             }
+            let body = { name: state.form.name }
+            if(state.form.parent_id !== "" && state.form.parent_id !== null){
+                body['parent_id'] =state.form.parent_id+""
+            }
+            const data1 = await $api('category/'+state.form.id,{
+                method:'PUT',
+                body,
+            });
+            
             success.value = true
         } catch (error) {
             console.log(error.data)
-             if(error.data['error'] !== undefined && error.data['error']['Name'] != undefined){
-                messageError.value = {
-                    'name':error.data['error']['Name'],
-                    'message':[`Name ${error.data['error']['Name']}`]
+            if(error.data['error'] !== undefined && (error.data['error']['Name'] != undefined || error.data['error']['parent'] != undefined)){
+                // err = error.data['error']
+                if(error.data['error']['Name'] != undefined){
+                    state.message.name = error.data['error']['Name']
+                    state.listMessage = [...state.listMessage, "Name "+error.data['error']['Name']]
                 }
+                if(error.data['error']['parent'] != undefined){
+                    state.message.parent_id = error.data['error']['parent']
+                    state.listMessage = [...state.listMessage, "Main Category "+error.data['error']['parent']]
+                }
+
+                
             
+            }else if(error.data['error']){
+                state.listMessage = [...state.listMessage, `${error.data['error']}`]
             }else if(error.data['message'] !=undefined){
-                messageError.value = {
-                    'name':'',
-                    'message':error.data['message']
-                }
+                state.listMessage = [...state.listMessage, error.data['message']]
             }
             
             success.value = false;
-        } finally{
-            isLoad.value = false
         }
     }
     async function fetch(){
         try{
-            if (isLoad.value) return
-            isLoad.value = true
-            const res = await $api('merk/'+id,{
+            if (state.load) return
+            state.load = true
+            const res = await $api('category/'+id,{
                 method:'GET',
             });
-            if (res['data'] != undefined &&res['data']['name'] !=undefined){
-                nameVal.value = res['data']['name']
+            const resData = res['data']
+            console.log(resData)
+            if (resData['id'] != undefined){
+                state.form.id = resData['id']
+                
             }
+            if (resData['name'] != undefined){
+                state.form.name = resData['name']
+                
+            }
+            if(resData['parent_id'] != undefined){
+                state.form.parent_id = resData['parent_id']
+            }
+            if(resData['path'] != undefined){
+                let split_path = (resData['path'] ?? "").split("/")
+                if(split_path.length > 1){
+                    split_path = split_path.map((data)=>data.replace(/^\d+-/g, ""))
+                    state.form.selected_label = split_path.slice(0, -1).join("/")
+                    // state.form.selected_label = split_path[0:]
+                }
+
+                // state.form.parent_id = resData['parent_id']
+            }
+            
             console.log(res)
         }catch(err){
             console.log(err)
         }finally{
             // await delay(5000);
-            isLoad.value = false
+           state.load = false
         }
         
     }
-    // const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     onMounted(() => {
         fetch()
     })

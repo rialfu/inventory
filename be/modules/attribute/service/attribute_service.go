@@ -20,6 +20,7 @@ type AttributeService interface {
 	UpdateAttributeValue(ctx context.Context, req dto.AttributeValueUpdateRequest, id string) (dto.AttributeValueResponse, error)
 	GetAllAttributeName(ctx *gin.Context) (helpers.PaginateData[dto.AttributeNameResponse], error)
 	GetAllAttributeValue(ctx *gin.Context) (helpers.PaginateData[dto.AttributeValueResponse], error)
+	GetAttributeName(ctx context.Context, id string) (dto.AttributeNameResponse, error)
 }
 
 type attributeService struct {
@@ -46,7 +47,7 @@ func (s *attributeService) CreateAttributeName(ctx context.Context, req dto.Attr
 	if err != nil {
 		return dto.AttributeNameResponse{}, err
 	}
-	if isExist == false {
+	if isExist {
 		return dto.AttributeNameResponse{}, constants.ErrValueNotUniq
 	}
 	data := entities.AttributeName{
@@ -56,6 +57,23 @@ func (s *attributeService) CreateAttributeName(ctx context.Context, req dto.Attr
 	res := dto.AttributeNameResponse{
 		ID:   updated.ID,
 		Name: updated.AttributeName,
+	}
+
+	return res, err
+}
+func (s *attributeService) GetAttributeName(ctx context.Context, id string) (dto.AttributeNameResponse, error) {
+	data, isExist, err := s.anrepository.GetById(ctx, id)
+
+	if err != nil {
+		return dto.AttributeNameResponse{}, err
+	}
+	if isExist == false {
+		return dto.AttributeNameResponse{}, constants.ErrDataNotFound
+	}
+
+	res := dto.AttributeNameResponse{
+		ID:   data.ID,
+		Name: data.AttributeName,
 	}
 
 	return res, err

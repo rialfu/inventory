@@ -5,7 +5,7 @@
             <h3 class="text-lg font-semibold text-gray-700 mb-4">List data</h3>
             <NuxtLink to="/category/create" class="bg-green-600 px-2 py-2 rounded text-gray-100">Create</NuxtLink>
             
-            <div v-if="parent.length > 0" class="flex items-center mt-5 flex-wrap">
+            <div v-if="parent.length > 0 && id!=''" class="flex items-center mt-5 flex-wrap">
   
                 <NuxtLink
                     to="/category"
@@ -13,26 +13,22 @@
                 >
                     Main
                 </NuxtLink>
+                <template v-if="parent.length > 1">
 
-                <span class="mx-2 text-gray-400">/</span>
+                </template>
+                
 
                 <template v-for="(item, index) in parent" :key="index">
-                    
-                    <NuxtLink
-                    v-if="index !== parent.length - 1"
-                    :to="`/category/${item.id}`"
-                    class="hover:text-blue-600 transition-colors"
-                    >
-                    {{ item.name }}
-                    </NuxtLink>
-                    
-                    <span v-else class="text-gray-900 font-medium">
-                    {{ item.name }}
-                    </span>
-
-                    <span v-if="index < parent.length - 1" class="mx-2 text-gray-400">
-                    /
-                    </span>
+                    <template v-if="index != 0">
+                        <span class="mx-2 text-gray-400">/</span>
+                        <NuxtLink
+                  
+                        :to="`/category/${item.id}`"
+                        class="hover:text-blue-600 transition-colors"
+                        >
+                        {{ item.name }}
+                        </NuxtLink>
+                    </template>
                     
                 </template>
             </div>
@@ -62,7 +58,7 @@
                     <td class="px-6 py-4 whitespace-nowrap">{{ index + 1 }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ data.name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <NuxtLink :to="{ path: `/category/${data['id']}`,  }" class="bg-blue-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border border-yellow-600 rounded cursor-pointer mx-2">Buka</NuxtLink>
+                        <NuxtLink :to="{ path: `/category/${data['id']}`,  }" class="bg-blue-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border hover:border-yellow-600 rounded cursor-pointer mx-2">Open</NuxtLink>
                         <NuxtLink :to="{ path: `/category/update/${data['id']}`,  }" class="bg-red-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border border-yellow-600 rounded cursor-pointer mx-2">Edit</NuxtLink>
                     </td>
                 </tr>
@@ -113,23 +109,28 @@
             });
             let data = []
             if(res['data'] != undefined){
-                
-                if(res['data']['data'] != undefined){
+                console.log(res['data'])
+                if(res['data']['data'] !== undefined){
                     data = res['data']['data']
                 }
-                if(res['data']['limit'] !=undefined){
+                if(res['data']['limit'] !==undefined){
                     perPage.value = res['data']['limit']
                 }
-                if(res['data']['total'] !=undefined){
+                if(res['data']['total'] !==undefined){
                     totalItems.value = res['data']['total']
                 }
-                if(res['data']['path'] !=undefined){
-                    let names = res['data']['path'].split("/")
-                    names = names.map((data)=>{
-                        let spl = data.split("-")
-                        return {'id':spl[0], "name":spl[1]}
-                    })
-                    parent.value = names
+                if(res['data']['path'] !==undefined){
+                    if(res['data']['path'] != null){
+                        let names = res['data']['path'].split("/")
+                        names = names.map((data)=>{
+                            let spl = data.split("-")
+                            return {'id':spl[0], "name":spl[1]}
+                        })
+                        parent.value = ["Main", ...names]
+                    }else{
+                        parent.value = ["Main"]
+                    }
+                    
                 }
                
             }
@@ -143,7 +144,7 @@
     }
     onMounted(() => {
         fetchData()
-        console.log(`the component is now mounted.`)
+        
     })
 </script>
 

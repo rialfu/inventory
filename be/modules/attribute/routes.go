@@ -13,10 +13,11 @@ func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 
 	routes := server.Group("/api/attribute")
 	{
-
-		routes.POST("/attribute-name", controller.CreateAttributeName)
-		routes.PUT("/attribute-name/:id", controller.UpdateAttributeName)
-		routes.POST("/attribute-value", controller.CreateAttributeValue)
-		routes.PUT("/attribute-value/:id", controller.UpdateAttributeValue)
+		routes.GET("/", controller.GetAllDataAttributeName)
+		routes.POST("/", controller.CreateAttributeName)
+		routes.PUT("/:parent", controller.UpdateAttributeName)
+		routes.GET("/:parent", controller.GetAttributeName)
+		routes.POST("/:parent/attribute-value", controller.CreateAttributeValue)
+		routes.PUT("/:parent/attribute-value/", controller.UpdateAttributeValue)
 	}
 }

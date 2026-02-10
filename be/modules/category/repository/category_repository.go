@@ -158,7 +158,7 @@ func (r *categoryRepository) ReadAll(ctx context.Context, queryParam map[string]
 func (r *categoryRepository) ReadDropdown(ctx context.Context, search string, limit int, page int) ([]entities.Category, error) {
 	db := r.getDB(ctx)
 	if search != "" {
-		db = db.Where("name LIKE ?", "%"+search+"%")
+		db = db.Where(db.Where("path LIKE ?", "%"+search+"%").Or("name LIKE ?", "%"+search+"%"))
 	}
 	if limit > 100 {
 		limit = 100

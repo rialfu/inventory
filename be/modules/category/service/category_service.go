@@ -18,6 +18,7 @@ type CategoryService interface {
 	GetDropdown(ctx context.Context, search string, page int) ([]dto.CategoryDropdownDTO, error)
 	Update(ctx context.Context, data dto.CategoryUpdateRequest, id string) (dto.CategoryResponse, error)
 	GetAll(ctx context.Context, id *string, queryParam map[string][]string) (helpers.PaginateData[dto.CategoryResponse], *string, error)
+	Get(ctx context.Context, id string) (dto.CategoryResponse, error)
 }
 
 type categoryService struct {
@@ -55,7 +56,8 @@ func (s *categoryService) Create(ctx context.Context, ins dto.CategoryCreateRequ
 	if err != nil {
 		return dto.CategoryResponse{}, err
 	}
-	return dto.CategoryResponse{ID: res.ID, Name: res.Name, ParentID: res.ParentID, Path: s.displayPath(res.Path)}, nil
+	display := s.displayPath(res.Path)
+	return dto.CategoryResponse{ID: res.ID, Name: res.Name, ParentID: res.ParentID, Path: &display}, nil
 }
 func (s *categoryService) GetDropdown(ctx context.Context, search string, page int) ([]dto.CategoryDropdownDTO, error) {
 	datas, err := s.repository.ReadDropdown(ctx, search, 10, page)
@@ -81,7 +83,7 @@ func (s *categoryService) GetAll(ctx context.Context, id *string, queryParam map
 		item := dto.CategoryResponse{
 			ID:       u.ID,
 			Name:     u.Name,
-			Path:     u.Path,
+			Path:     &u.Path,
 			ParentID: u.ParentID,
 		}
 		results = append(results, item)
@@ -104,6 +106,20 @@ func (s *categoryService) GetAll(ctx context.Context, id *string, queryParam map
 
 	}
 	return helpers.PaginateData[dto.CategoryResponse]{Data: results, Page: page, Limit: limit, Total: total}, parentPath, nil
+}
+func (s *categoryService) Get(ctx context.Context, id string) (dto.CategoryResponse, error) {
+	var res dto.CategoryResponse
+	data, exist, err := s.repository.GetById(ctx, id, false)
+	if err != nil {
+		return res, err
+	}
+	if exist == false {
+		return res, constants.ErrDataNotFound
+	}
+	res.ID = data.ID
+	res.Name = data.Name
+	res.Path = &data.Path
+	return res, nil
 }
 func (s *categoryService) Update(ctx context.Context, data dto.CategoryUpdateRequest, id string) (dto.CategoryResponse, error) {
 	var res dto.CategoryResponse
@@ -176,10 +192,11 @@ func (s *categoryService) Update(ctx context.Context, data dto.CategoryUpdateReq
 			return err
 		}
 		val, err := strconv.ParseUint(data.ParentID, 10, 64)
+		display := s.displayPath(newPath)
 		res = dto.CategoryResponse{
 			ID:       val,
 			Name:     data.Name,
-			Path:     s.displayPath(newPath),
+			Path:     &display,
 			ParentID: newParentID,
 		}
 		return nil

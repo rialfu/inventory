@@ -120,7 +120,7 @@
 </template>
 
 <script setup>
-    import DropdownCustom from '~/components/dynamic_search_dropdown.vue'
+    
     const { $api } = useNuxtApp();
     
     const form = ref({'sku':'', 'name':'','unit':'','withoutMerk':false,'category':null, 'naming_category':'', 'merk':null,  'category2':{'id':null, 'name':''}})
@@ -353,7 +353,7 @@
     }
     onMounted(() => {
         fetchDataMerk()
-        console.log(`the component is now mounted.`)
+        
     })
 </script>
 

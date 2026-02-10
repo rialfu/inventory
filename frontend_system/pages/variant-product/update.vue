@@ -304,7 +304,7 @@ import { useRoute } from "vue-router";
         fetchDataMerk()
         fetchData()
         name.value['name']
-        console.log(`the component is now mounted.`)
+        
     })
 </script>
 

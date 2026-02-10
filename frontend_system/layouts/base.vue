@@ -29,12 +29,12 @@
             </button>
             <ul v-show="openMenus.includes('main1')" class="ml-8 mt-2 space-y-2">
               <li class="mb-2">
-                <NuxtLink to="/admin/dashboard" class="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-600 hover:text-blue-500 transition-colors duration-200">
+                <NuxtLink to="/merk" class="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-600 hover:text-blue-500 transition-colors duration-200">
                   Dashboard
                 </NuxtLink>
               </li>
               <li class="mb-2">
-                <NuxtLink to="/admin/users" class="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-600 hover:text-blue-500 transition-colors duration-200">
+                <NuxtLink to="/merk" class="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-600 hover:text-blue-500 transition-colors duration-200">
                   Users
                 </NuxtLink>
               </li>
@@ -87,7 +87,7 @@
           </li>
 
           <li class="mb-2">
-            <NuxtLink to="/admin/settings" class="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-600 hover:text-blue-500 transition-colors duration-200">
+            <NuxtLink to="/merk" class="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-600 hover:text-blue-500 transition-colors duration-200">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.942 3.333.999 2.405 2.503a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.942 1.543-.999 3.333-2.503 2.405a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.942-3.333-.999-2.405-2.503a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.942-1.543.999-3.333 2.503-2.405a1.724 1.724 0 002.573-1.066z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
               App Settings
             </NuxtLink>

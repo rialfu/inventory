@@ -1,10 +1,10 @@
 <template>
     <div>
-        <h1 class="text-3xl font-bold mb-6">Create Attribute</h1>
+        <h1 class="text-3xl font-bold mb-6">Create Attribute Name</h1>
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
            
             <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4"><span @click="goBack" class="cursor-pointer">←</span> Form</h3>
-            <div class="relative bg-red-600 text-white p-4 rounded-lg shadow-md max-w-sm" v-show="(messageError['message'] ?? []).length > 0">
+            <div class="relative bg-red-600 text-white p-4 rounded-lg shadow-md max-w-sm" v-show="(state.listMessage ?? []).length > 0">
                 <button class="absolute top-2 right-2 text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" @click="closeButton">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -13,7 +13,7 @@
 
                 <h3 class="font-bold text-lg mb-2">Validation Error!</h3>
                 <ul class="list-disc list-inside p-0 m-0 text-sm">
-                    <li class="mb-1" v-for="(data, index) in (messageError['message'] ?? []) " :key="index">{{data}}</li>
+                    <li class="mb-1" v-for="(data, index) in (state.listMessage ?? []) " :key="index">{{data}}</li>
                     
                 </ul>
             </div>
@@ -27,24 +27,24 @@
                 <h3 class="font-bold text-lg mb-2">Notification</h3>
                 <ul class="list-disc list-inside p-0 m-0 text-sm">
                     <li class="mb-1" >Success Create</li>
-                    
                 </ul>
             </div>
-            <form class="">
+            <form class="" @submit.prevent>
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
-                        Name
-                    </label>
-                    <input :class="['shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ', (messageError['name'] !== undefined && messageError['name'] !== ''? 'border-red-500 mb-3':'')]" id="name" type="text" placeholder="Name" @input="changeValue" v-model="name">
-                    <p class="text-red-500 text-xs italic" v-show=" messageError['name'] !== undefined && messageError['name'] !== ''">{{messageError['name']}}</p>
+                    <CustomInput
+                        v-model="state.form.name"
+                        label="Name"
+                        id="name"
+                        placeholder="Please fill category name"
+                        :error="state.message.name"
+                    />
                 </div>
                 
-                <div class="flex items-center justify-between">
-                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" @click="save"  type="button">
-                        Save
-                    </button>
+                <CustomButtonForm
+                    :is-load="state.load"
+                    @save="save"
+                />
                 
-                </div>
             </form>
         </div>
     </div>
@@ -52,75 +52,89 @@
 
 <script setup>
 
-    const { $api } = useNuxtApp();
-    
-    const name = ref('')
-    const success = ref(false)
-    const router = useRouter();
-    const messageError = ref({'name':'', 'message':[]})
+
     definePageMeta({
         layout: 'base'
     });
-    function changeValue(value){
-        messageError.value = {
-            'name':'',
-            'message':messageError.value['message']
-        }
-    }
+// import CustomInput from '~/components/CustomInput.vue';
+// import Dropdown from '~/components/Dropdown.vue';
+
+
+    const { $api } = useNuxtApp();
+    
+    // const name = ref('')
+    const success = ref(false)
+    const router = useRouter();
+    // const messageError = ref({'name':'', 'message':[]})
+    const state = reactive({
+        form: {
+            name: '',
+            parent_id: null, 
+            selected_label:'',
+        },
+        message: {
+            name: '',
+            parent_id: '',
+            
+        },
+        listMessage:[],
+        load:true
+    })
+    
     function goBack(){
-        console.log('test')
+        
         router.back();
     }
 
     function closeButtonSuccess(){
         success.value = false;
     }
-    function closeButton(){
-        messageError.value = {
-            'name':messageError.value['name'],
-            'message':[]
+    function resetMessageAll(){
+        state.message = {
+            name: '',
+            parent_id: '',
         }
+        state.listMessage = []
     }
+    function closeButton(){
+        resetMessageAll() 
+    }
+    
     async function save() {
-        if(name.value == ''){
-            messageError.value = {
-                'name':'Please fill name',
-                'message':messageError.value['message']
-            }
-            return
-        }
-        
+        resetMessageAll()
         try {
-            
-            const data1 = await $api('attribute',{
-                method:'POST',
-                
-                body:{ name: name.value }
-            });
-            messageError.value = {
-                'name':'',
-                'message':[]
+            if (state.form.name == ""){
+                state.message.name = "Please fill form"
+                return
             }
+            let body = { name: state.form.name }
+            
+            const data = await $api('attribute/',{
+                method:'POST',
+                body,
+            });
+            
             success.value = true
         } catch (error) {
-             if(error.data['message'] !== undefined){
-                messageError.value = {
-                    'name':'',
-                    'message':error.data['message']
+            console.log(error.data)
+            if(error.data['error'] !== undefined && (error.data['error']['name'] != undefined || error.data['error']['parent'] != undefined)){
+                // err = error.data['error']
+                if(error.data['error']['name'] != undefined){
+                    state.message.name = error.data['error']['name']
+                    state.listMessage = [...state.listMessage, "Name "+error.data['error']['name']]
                 }
             
-            }else{
-                messageError.value = {
-                    'name':'',
-                    'message':['Something wrong from server']
-                }
+            }else if(error.data['error']){
+                state.listMessage = [...state.listMessage, `${error.data['error']}`]
+            }else if(error.data['message'] !=undefined){
+                state.listMessage = [...state.listMessage, error.data['message']]
             }
             
             success.value = false;
         }
     }
     onMounted(() => {
-        console.log(`the component is now mounted.`)
+        state.load = false
     })
 </script>
 
