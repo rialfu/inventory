@@ -159,17 +159,18 @@ func (s *categoryService) Update(ctx context.Context, data dto.CategoryUpdateReq
 			if isExist == false {
 				return dto.ErrGetParentNotFound
 			}
+			if strings.HasPrefix(parent.Path, dataInDB.Path) {
+				return dto.ErrDataCircular
+			}
 			newDepth = int(parent.Depth) + 1
-			sb.Reset()
+
 			sb.WriteString(parent.Path)
 			sb.WriteString("/")
 			sb.WriteString(strconv.FormatUint(dataInDB.ID, 10))
 			sb.WriteString("-")
 			sb.WriteString(data.Name)
 			newPath = sb.String()
-			if strings.HasPrefix(parent.Path, dataInDB.Path) {
-				return dto.ErrDataCircular
-			}
+
 			// newPath = parent.Path + "/" + padID(cat.ID) + "-" + newSlug
 		} else {
 			newDepth = 0
@@ -178,6 +179,7 @@ func (s *categoryService) Update(ctx context.Context, data dto.CategoryUpdateReq
 			sb.WriteString(data.Name)
 			newPath = sb.String()
 		}
+		sb.Reset()
 
 		err = s.repository.Update(txCtx, id, map[string]any{"name": data.Name, "path": newPath, "depth": newDepth, "parent_id": newParentID})
 		if err != nil {

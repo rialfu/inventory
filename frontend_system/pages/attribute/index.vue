@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1 class="text-3xl font-bold mb-6 text-slate-600">Merk</h1>
+        <h1 class="text-3xl font-bold mb-6 text-slate-600">Attribute Name</h1>
         <div class="bg-white  p-6 rounded-lg shadow-md">
             <h3 class="text-lg font-semibold text-gray-700 mb-4">List data</h3>
             <NuxtLink to="/attribute/create" class="bg-green-600 px-2 py-2 rounded text-gray-100">Create</NuxtLink>
@@ -30,6 +30,7 @@
                     <td class="px-6 py-4 whitespace-nowrap">{{ index + 1 }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ data.name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
+                        <NuxtLink :to="{ path: `/attribute/${data['id']}`,  }" class="bg-blue-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border hover:border-yellow-600 rounded cursor-pointer mx-2">Open</NuxtLink>
                         <NuxtLink :to="{ path: `/attribute/update/${data['id']}`,  }" class="bg-red-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border border-yellow-600 rounded cursor-pointer mx-2">Edit</NuxtLink>
                     </td>
                 </tr>

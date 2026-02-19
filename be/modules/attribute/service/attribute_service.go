@@ -19,7 +19,7 @@ type AttributeService interface {
 	UpdateAttributeName(ctx context.Context, req dto.AttributeNameUpdateRequest, id string) (dto.AttributeNameResponse, error)
 	UpdateAttributeValue(ctx context.Context, req dto.AttributeValueUpdateRequest, id string) (dto.AttributeValueResponse, error)
 	GetAllAttributeName(ctx *gin.Context) (helpers.PaginateData[dto.AttributeNameResponse], error)
-	GetAllAttributeValue(ctx *gin.Context) (helpers.PaginateData[dto.AttributeValueResponse], error)
+	GetAllAttributeValueBasedParent(ctx *gin.Context, parentId string) (dto.AttributeNameWithValueResponse, error)
 	GetAttributeName(ctx context.Context, id string) (dto.AttributeNameResponse, error)
 }
 
@@ -119,22 +119,33 @@ func (s *attributeService) GetAllAttributeName(ctx *gin.Context) (helpers.Pagina
 
 	return helpers.PaginateData[dto.AttributeNameResponse]{Data: results, Limit: limit, Page: page, Total: total}, nil
 }
-func (s *attributeService) GetAllAttributeValue(ctx *gin.Context) (helpers.PaginateData[dto.AttributeValueResponse], error) {
-	datas, page, limit, total, err := s.anrepository.ReadAll(ctx, ctx.Request.URL.Query())
+func (s *attributeService) GetAllAttributeValueBasedParent(ctx *gin.Context, parentId string) (dto.AttributeNameWithValueResponse, error) {
+	var res dto.AttributeNameWithValueResponse
+	mainData, isExist, err := s.anrepository.GetById(ctx, parentId)
+	if err != nil {
+		return res, err
+	}
+	if isExist == false {
+		return res, constants.ErrDataNotFound
+	}
+	datas, page, limit, total, err := s.avrepository.ReadAllWithParent(ctx, ctx.Request.URL.Query(), parentId)
 
 	if err != nil {
-		return helpers.PaginateData[dto.AttributeValueResponse]{}, err
+		return res, err
 	}
+	res.ID = mainData.ID
+	res.Name = mainData.AttributeName
+
 	results := make([]dto.AttributeValueResponse, 0, len(datas))
 	for _, u := range datas {
 		item := dto.AttributeValueResponse{
 			ID:   u.ID,
-			Name: u.AttributeName,
+			Name: u.AttributeValue,
 		}
 		results = append(results, item)
 	}
-
-	return helpers.PaginateData[dto.AttributeValueResponse]{Data: results, Limit: limit, Page: page, Total: total}, nil
+	res.Values = helpers.PaginateData[dto.AttributeValueResponse]{Data: results, Limit: limit, Page: page, Total: total}
+	return res, nil
 }
 
 func (s *attributeService) UpdateAttributeName(ctx context.Context, req dto.AttributeNameUpdateRequest, id string) (dto.AttributeNameResponse, error) {

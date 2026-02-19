@@ -23,6 +23,7 @@ type (
 		UpdateAttributeName(ctx *gin.Context)
 		CreateAttributeValue(ctx *gin.Context)
 		UpdateAttributeValue(ctx *gin.Context)
+		GetAllAttributeValueBasedParent(ctx *gin.Context)
 	}
 
 	attributeController struct {
@@ -77,6 +78,33 @@ func (c *attributeController) GetAttributeName(ctx *gin.Context) {
 	}
 	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_DATA, data)
 	ctx.JSON(http.StatusOK, res)
+}
+func (c *attributeController) GetAllAttributeValueBasedParent(ctx *gin.Context) {
+	var res utils.Response
+	status := 200
+	id := ctx.Param("parent")
+	if id == "" {
+		res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
+		status = http.StatusNotFound
+		ctx.AbortWithStatusJSON(status, res)
+		return
+	}
+	data, err := c.service.GetAllAttributeValueBasedParent(ctx, id)
+	if err != nil {
+		if errors.Is(err, constants.ErrDataNotFound) {
+			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
+			status = http.StatusNotFound
+		} else {
+			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, err.Error(), nil)
+			status = http.StatusInternalServerError
+		}
+
+		ctx.AbortWithStatusJSON(status, res)
+		return
+	}
+	res = utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_LIST_DATA, data)
+	ctx.JSON(http.StatusOK, res)
+
 }
 
 func (c *attributeController) CreateAttributeName(ctx *gin.Context) {

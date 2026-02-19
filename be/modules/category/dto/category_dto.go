@@ -26,7 +26,8 @@ type (
 	}
 
 	CategoryUpdateRequest struct {
-		Name     string `json:"name" form:"name" validate:"required,min=2,max=100"`
-		ParentID string `json:"parent_id"`
+		CategoryCreateRequest
+		// Name     string `json:"name" form:"name" validate:"required,min=2,max=100"`
+		// ParentID string `json:"parent_id"`
 	}
 )

@@ -16,6 +16,7 @@ type (
 		GetById(ctx context.Context, id string) (entities.AttributeValue, bool, error)
 		Update(ctx context.Context, data entities.AttributeValue) (entities.AttributeValue, error)
 		ReadAll(ctx context.Context, queryParam map[string][]string) ([]entities.AttributeValue, int, int, int64, error)
+		ReadAllWithParent(ctx context.Context, queryParam map[string][]string, parentId string) ([]entities.AttributeValue, int, int, int64, error)
 		GetByName(ctx context.Context, name string) (entities.AttributeValue, bool, error)
 		GetByNameOrId(ctx context.Context, id string, name string) (entities.AttributeValue, bool, error)
 		GetByIds(ctx context.Context, id []string) ([]entities.AttributeValue, error)
@@ -121,7 +122,22 @@ func (r *attributeValueRepository) ReadAll(ctx context.Context, queryParam map[s
 	}
 	return datas, pagination.Page, pagination.Limit, total, nil
 }
+func (r *attributeValueRepository) ReadAllWithParent(ctx context.Context, queryParam map[string][]string, parentId string) ([]entities.AttributeValue, int, int, int64, error) {
+	var datas []entities.AttributeValue
+	db := r.db.Model(&entities.AttributeValue{})
+	db = db.Preload("AttributeName")
+	db = db.Where("attribute_name_id = ?", parentId)
+	db, pagination := helpers.ApplyPagination(db, &entities.AttributeValue{}, queryParam)
 
+	var total int64
+	if err := db.Find(&datas).Error; err != nil {
+		return []entities.AttributeValue{}, 0, 0, 0, err
+	}
+	if err := db.Limit(-1).Offset(-1).Count(&total).Error; err != nil {
+		return []entities.AttributeValue{}, 0, 0, 0, err
+	}
+	return datas, pagination.Page, pagination.Limit, total, nil
+}
 func (r *attributeValueRepository) Update(ctx context.Context, data entities.AttributeValue) (entities.AttributeValue, error) {
 	db := r.getDB(ctx)
 

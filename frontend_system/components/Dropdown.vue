@@ -1,5 +1,4 @@
 <script setup>
-import { debounce } from 'lodash-es'
 
 const props = defineProps({
     modelValue: [String, Number],
@@ -79,7 +78,19 @@ const loadMore = () => {
         fetchResults(true)
     }
 }
-
+function debounce(fn, ms) {
+    let timeoutId;
+    
+    return function (...args) {
+        // Batalkan timeout sebelumnya jika fungsi dipanggil lagi sebelum waktu habis
+        clearTimeout(timeoutId);
+        
+        // Mulai timer baru
+        timeoutId = setTimeout(() => {
+            fn.apply(this, args);
+        }, ms);
+    };
+}
 const debouncedSearch = debounce(() => fetchResults(false), 500)
 
 watch(search, (newVal) => {

@@ -51,13 +51,32 @@
 </template>
 
 <script setup>
+    import * as v from 'valibot'
 
+        // 1. Definisikan aturan (Schema)
+    const schema = v.object({
+        name: v.pipe(v.string(), v.minLength(1, 'Name must fill')),
+    })
 
     definePageMeta({
         layout: 'base'
     });
-// import CustomInput from '~/components/CustomInput.vue';
-// import Dropdown from '~/components/Dropdown.vue';
+    
+    const validateForm = () => {
+        const result = v.safeParse(schema, state.form);
+
+        if (!result.success) {
+            const flattenedErrors = v.flatten(result.issues).nested;
+
+            if (flattenedErrors.name) state.message.name = flattenedErrors.name[0];
+
+            state.listMessage = v.flatten(result.issues).root || Object.values(flattenedErrors).flat();
+            
+            return false;
+        }
+
+        return true; // Validasi berhasil
+    };
 
 
     const { $api } = useNuxtApp();
@@ -68,13 +87,10 @@
     // const messageError = ref({'name':'', 'message':[]})
     const state = reactive({
         form: {
-            name: '',
-            parent_id: null, 
-            selected_label:'',
+            name: ''
         },
         message: {
-            name: '',
-            parent_id: '',
+            name: ''
             
         },
         listMessage:[],
@@ -103,29 +119,32 @@
     async function save() {
         resetMessageAll()
         try {
-            if (state.form.name == ""){
-                state.message.name = "Please fill form"
-                return
+            if(validateForm()){
+                let body = { name: state.form.name }
+                const data = await $api('attribute/',{
+                    method:'POST',
+                    body,
+                });
+                
+                success.value = true
             }
-            let body = { name: state.form.name }
             
-            const data = await $api('attribute/',{
-                method:'POST',
-                body,
-            });
-            
-            success.value = true
         } catch (error) {
             console.log(error.data)
-            if(error.data['error'] !== undefined && (error.data['error']['name'] != undefined || error.data['error']['parent'] != undefined)){
-                // err = error.data['error']
-                if(error.data['error']['name'] != undefined){
-                    state.message.name = error.data['error']['name']
-                    state.listMessage = [...state.listMessage, "Name "+error.data['error']['name']]
-                }
+            if(error.data['error'] !== undefined && error.data['error']['Name'] !== undefined ){
+                state.message.name = error.data['error']['Name']
+                state.listMessage = [...state.listMessage, "Name "+error.data['error']['Name']]
             
             }else if(error.data['error']){
-                state.listMessage = [...state.listMessage, `${error.data['error']}`]
+                if(Array.isArray(error.data['error'])){
+                    state.listMessage = [...state.listMessage, ...(error.data['error'])]
+                }else if(isAssociativeArray(error.data['error'])){
+                    const values = Object.entries(error.data['error']).map(([key, value]) => `${key}: ${value}`)
+                    state.listMessage = [...state.listMessage, ...values]
+                }else{
+                    state.listMessage = [...state.listMessage, `${error.data['error']}`]
+                }
+                
             }else if(error.data['message'] !=undefined){
                 state.listMessage = [...state.listMessage, error.data['message']]
             }

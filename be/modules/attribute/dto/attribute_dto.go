@@ -1,5 +1,7 @@
 package dto
 
+import "rialfu/wallet/pkg/helpers"
+
 const (
 // Failed
 // MESSAGE_FAILED_REGISTER_USER = "failed create user"
@@ -34,7 +36,11 @@ type (
 		Name            string `json:"name" form:"name" validate:"required,min=2,max=50"`
 		AttributeNameID string `json:"attribute_name" form:"attribute_name" validate:"required"`
 	}
-
+	AttributeNameWithValueResponse struct {
+		ID     uint64                                       `json:"id"`
+		Name   string                                       `json:"name"`
+		Values helpers.PaginateData[AttributeValueResponse] `json:"values"`
+	}
 	AttributeValueResponse struct {
 		ID              uint64  `json:"id"`
 		Name            string  `json:"name" form:"name" `

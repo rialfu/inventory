@@ -51,24 +51,23 @@
 </template>
 
 <script setup>
-import { isStatement } from 'typescript';
+    import * as v from 'valibot'
 
+            // 1. Definisikan aturan (Schema)
+    const schema = v.object({
+        name: v.pipe(v.string(), v.minLength(1, 'Name must fill')),
+    })
 
     definePageMeta({
         layout: 'base'
     });
-// import CustomInput from '~/components/CustomInput.vue';
-// import Dropdown from '~/components/Dropdown.vue';
-
 
     const { $api } = useNuxtApp();
     
-    // const name = ref('')
     const success = ref(false)
     const route = useRoute();
     const router = useRouter()
     const id = route.params.id
-    // console.log(route.params)
     
     const state = reactive({
         form: {
@@ -83,7 +82,7 @@ import { isStatement } from 'typescript';
             
         },
         listMessage:[],
-        load:false
+        load:false,
     })
     
     function goBack(){
@@ -107,24 +106,33 @@ import { isStatement } from 'typescript';
     function selectedValue(item){
 
     }
-    function preventDefaultProcess(){
+    const validateForm = () => {
+        const result = v.safeParse(schema, state.form);
 
-    }
+        if (!result.success) {
+            const flattenedErrors = v.flatten(result.issues).nested;
+
+            if (flattenedErrors.name) state.message.name = flattenedErrors.name[0];
+
+            state.listMessage = v.flatten(result.issues).root || Object.values(flattenedErrors).flat();
+            
+            return false;
+        }
+
+        return true; // Validasi berhasil
+    };
     async function save() {
         resetMessageAll()
         try {
-            if (state.form.name == ""){
-                state.message.name = "Please fill form"
-                return
+            if(validateForm()){
+                let body = { name: state.form.name }
+                const data = await $api('attribute/'+state.form.id,{
+                    method:'PUT',
+                    body,
+                });
+                
+                success.value = true
             }
-            let body = { name: state.form.name }
-            
-            const data = await $api('attribute/'+state.form.id,{
-                method:'PUT',
-                body,
-            });
-            
-            success.value = true
         } catch (error) {
             console.log(error.data)
             if(error.data['error'] !== undefined && error.data['error']['Name'] != undefined){
@@ -172,8 +180,10 @@ import { isStatement } from 'typescript';
         }
         
     }
-    onMounted(() => {
+    onMounted(async() => {
+        await nextTick();
         fetch()
+        
     })
 </script>
 
