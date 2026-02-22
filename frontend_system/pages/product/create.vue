@@ -29,27 +29,42 @@
                     <li class="mb-1" >Success Create</li>
                 </ul>
             </div>
-            <div class="mb-4">
-                <CustomInput
-                    v-model="state.form.name"
-                    label="Name"
-                    id="name"
-                    placeholder="Please fill category name"
-                    :error="state.message.name"
-                />
+            <div class="grid grid-cols-3 gap-4">
+                <div class="mb-4">
+                    <CustomInput
+                        v-model="state.form.name"
+                        label="Name"
+                        id="name"
+                        placeholder="Please fill category name"
+                        :error="state.message.name"
+                    />
+                </div>
+                <div class="mb-4">
+                    <Dropdown
+                        v-model="state.form.category_id" 
+                        placeholder="Find Category " 
+                        url="/item/option/category"
+                        id-value="id",
+                        text="name"
+                        label="Category"
+                        :input-id="state.message.category_id"
+                        :error="state.message.category_id"
+                    />
+                </div>
+                <div class="mb-4">
+                    <Dropdown
+                        v-model="state.form.merk_id" 
+                        placeholder="Find Merk" 
+                        url="/item/option/merk"
+                        id-value="id",
+                        text="name"
+                        label="Merk"
+                        :input-id="state.message.merk_id"
+                        :error="state.message.merk_id"
+                    />
+                </div>
             </div>
-            <div class="mb-4">
-                <Dropdown
-                    v-model="state.form.parent_id" 
-                    placeholder="Find Main Category " 
-                    url="/category/dropdown"
-                    id-value="id",
-                    text="name"
-                    @selected="selectedValue"
-                    label="Main Category (optional)"
-                    :input-id="state.message.parent_id"
-                />
-            </div>
+            
             
             <CustomButtonForm
                 :is-load="state.load"
@@ -63,38 +78,46 @@
 <script setup>
     import * as v from 'valibot'
     import { validateFormCustom, isAssociativeArray } from '~/utils/helpers'
-
     definePageMeta({
         layout: 'base'
     });
-
     const { $api } = useNuxtApp();
     
     const success = ref(false)
     const router = useRouter();
     
+    const schema = v.object({
+        name: v.pipe(v.string(), v.minLength(1, 'Name must fill')),
+        category_id: v.pipe(
+            v.number('Category must fill'),
+            v.minValue(1, 'Category must fill')
+        ),
+        merk_id: v.pipe(
+            v.number('Merk must fill'),
+            v.minValue(1, 'Merk must fill')
+        ),
+    })
+    
     const state = reactive({
         form: {
             name: '',
-            parent_id: null, 
-            selected_label:'',
+            category_id: null, 
+            category_selected_label:'',
+            merk_id:null,
+            merk_selected_label:'',
         },
         message: {
             name: '',
-            parent_id: '',
+            category_id: '',
+            merk_id:'',
             
         },
         listMessage:[],
         load:false
     })
-    const schema = v.object({
-        name: v.pipe(v.string(), v.minLength(1, 'Name must fill')),
-        parent_id: v.optional(
-            v.minValue(1, 'Main Category not suitable')
-        ),
-        
-    })
+    
     function goBack(){
+        
         router.back();
     }
 
@@ -107,7 +130,7 @@
             parent_id: '',
         }
         state.listMessage = []
-        success.value = false;
+        success.value = false
     }
     function closeButton(){
         resetMessageAll() 
@@ -120,28 +143,43 @@
         if(state.load) return
         state.load = true
         try {
-            if(validateFormCustom(v, schema, state, ['name', 'parent_id'])){
-                let body = { name: state.form.name }
-                if(state.form.parent_id !== "" && state.form.parent_id !== null){
-                    body['parent_id'] =state.form.parent_id+""
+            if(validateFormCustom(v, schema, state, ['name', 'merk_id', 'category_id'])){
+                let body = { name:state.form.name, category:state.form.category_id,
+                    merk:state.form.merk_id 
                 }
-                const res = await $api('category/',{
+                const res = await $api('item/',{
                     method:'POST',
                     body,
                 });
+                alert("Success save")
+                if(res['data'] !== undefined || res.data['id'] !== undefined){
+                    navigateTo(`/product/update/${res.data['id']}`)
+                }
+                console.log(res.data)
                 success.value = true
+                // navigateTo(`/product/update/`)
             }
         } catch (error) {
-            if(error.data['error'] !== undefined && (error.data['error']['Name'] != undefined || error.data['error']['parent'] != undefined)){
-                if(error.data['error']['Name'] != undefined){
+            console.log(error.data)
+            if(error.data['error'] !== undefined && (
+                error.data['error']['Name'] !== undefined || 
+                error.data['error']['Category'] !== undefined ||
+                error.data['error']['Merk'] !== undefined
+            )){
+                if(error.data['error']['Name'] !== undefined){
                     state.message.name = error.data['error']['Name']
                     state.listMessage = [...state.listMessage, "Name "+error.data['error']['Name']]
                 }
-                if(error.data['error']['parent'] != undefined){
-                    state.message.parent_id = error.data['error']['parent']
-                    state.listMessage = [...state.listMessage, "Main Category "+error.data['error']['parent']]
+                if(error.data['error']['Category'] !== undefined){
+                    state.message.category_id = error.data['error']['Category']
+                    state.listMessage = [...state.listMessage, "Category "+error.data['error']['Category']]
                 }
-            }else if(error.data['error'] !== undefined){
+                if(error.data['error']['Merk'] !== undefined){
+                    state.message.merk_id = error.data['error']['Merk']
+                    state.listMessage = [...state.listMessage, "Merk "+error.data['error']['Merk']]
+                }
+            
+            }else if(error.data['error']){
                 if(Array.isArray(error.data['error'])){
                     state.listMessage = [...state.listMessage, ...(error.data['error'])]
                 }else if(isAssociativeArray(error.data['error'])){

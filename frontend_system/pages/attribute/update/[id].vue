@@ -99,6 +99,7 @@
             parent_id: '',
         }
         state.listMessage = []
+        success.value = false;
     }
     function closeButton(){
         resetMessageAll() 
@@ -123,6 +124,8 @@
     };
     async function save() {
         resetMessageAll()
+        if(state.load) return
+        state.load = true
         try {
             if(validateForm()){
                 let body = { name: state.form.name }
@@ -134,24 +137,31 @@
                 success.value = true
             }
         } catch (error) {
-            console.log(error.data)
+
             if(error.data['error'] !== undefined && error.data['error']['Name'] != undefined){
-                // err = error.data['error']
                 if(error.data['error']['Name'] != undefined){
                     state.message.name = error.data['error']['Name']
                     state.listMessage = [...state.listMessage, "Name "+error.data['error']['Name']]
                 }
-                
 
-                
-            
             }else if(error.data['error']){
-                state.listMessage = [...state.listMessage, `${error.data['error']}`]
+                if(Array.isArray(error.data['error'])){
+                    state.listMessage = [...state.listMessage, ...(error.data['error'])]
+                }else if(isAssociativeArray(error.data['error'])){
+                    const values = Object.entries(error.data['error']).map(([key, value]) => `${key}: ${value}`)
+                    state.listMessage = [...state.listMessage, ...values]
+                }else{
+                    state.listMessage = [...state.listMessage, `${error.data['error']}`]
+                }
+
             }else if(error.data['message'] !=undefined){
                 state.listMessage = [...state.listMessage, error.data['message']]
+
+            }else{
+                state.listMessage = [...state.listMessage, "Something is wrong"]
             }
-            
-            success.value = false;
+        } finally {
+            state.load = false
         }
     }
     async function fetch(){
@@ -175,13 +185,11 @@
         }catch(err){
             console.log(err)
         }finally{
-            // await delay(5000);
            state.load = false
         }
         
     }
     onMounted(async() => {
-        await nextTick();
         fetch()
         
     })

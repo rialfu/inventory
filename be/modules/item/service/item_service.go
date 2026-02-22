@@ -6,9 +6,12 @@ import (
 	"rialfu/wallet/modules/item/dto"
 	itemRepo "rialfu/wallet/modules/item/repository"
 	"strconv"
+	"strings"
 
 	attrRepo "rialfu/wallet/modules/attribute/repository"
+	dtoCat "rialfu/wallet/modules/category/dto"
 	cateRepo "rialfu/wallet/modules/category/repository"
+	dtoMerk "rialfu/wallet/modules/merk/dto"
 	merkRepo "rialfu/wallet/modules/merk/repository"
 	"rialfu/wallet/pkg/constants"
 	"rialfu/wallet/pkg/helpers"
@@ -18,9 +21,11 @@ import (
 )
 
 type ItemService interface {
+	GetAll(ctx *gin.Context) (helpers.PaginateData[dto.ItemResponse], error)
 	CreateOrUpItem(ctx context.Context, req dto.ItemCreateRequest) (dto.ItemResponse, error)
 	// Update(ctx context.Context, req dto.MerkUpdateRequest, id string) (dto.MerkResponse, error)
-	// GetAll(ctx *gin.Context) (helpers.PaginateData[dto.MerkResponse], error)
+	GetDropdownMerk(ctx context.Context, search string, page int) ([]dtoMerk.MerkDropdownDTO, error)
+	GetDropdownCategory(ctx context.Context, search string, page int) ([]dtoCat.CategoryDropdownDTO, error)
 }
 
 type itemService struct {
@@ -62,54 +67,53 @@ func (s *itemService) CreateOrUpItem(ctx context.Context, req dto.ItemCreateRequ
 		var err error
 		// mErr := &utils.MultiError{}
 		isExist := false
-
-		//checking merk
 		merk, isExist, err := s.mr.GetById(txCtx, strconv.FormatUint(req.Merk, 10))
 		if err != nil {
 			return err
 		}
 		if isExist == false {
-			return constants.ErrDataNotFound
+			return dto.ErrMerkNotFound
 		}
-		//checking category
+
 		cat, isExist, err := s.cr.GetById(txCtx, strconv.FormatUint(req.Category, 10), false)
 		if err != nil {
 			return err
 		}
 		if isExist == false {
-			return constants.ErrDataNotFound
+			return dto.ErrCategoryNotFound
 		}
 
-		data.Name = req.Name
-		data.MerkID = merk.ID
-		data.CategoryID = cat.ID
 		if req.ID == nil {
+			data.Name = req.Name
+			data.MerkID = merk.ID
+			data.CategoryID = cat.ID
 			data, err = s.itemRepository.Create(txCtx, data)
 		} else {
-			data, err = s.itemRepository.Update(txCtx, data)
-		}
-		if err == nil {
-			up, exists, err := s.itemRepository.GetByIdWithMerkAndCategory(txCtx, strconv.FormatUint(data.ID, 10))
+			data, isExist, err = s.itemRepository.GetById(ctx, *req.ID, true)
 			if err != nil {
 				return err
 			}
-			res = dto.ItemResponse{
-				ID:         data.ID,
-				Name:       data.Name,
-				CategoryID: data.CategoryID,
-				MerkID:     data.MerkID,
+			if isExist == false {
+				return constants.ErrDataNotFound
 			}
-			if exists {
-				res.MerkID = up.Merk.ID
-				res.MerkName = up.Merk.Name
-				res.CategoryID = up.Category.ID
-				res.CategoryName = up.Category.Path
-			}
-			return nil
-
+			data.Name = req.Name
+			data.MerkID = merk.ID
+			data.CategoryID = cat.ID
+			data, err = s.itemRepository.Update(txCtx, data)
+		}
+		if err != nil {
+			return err
 		}
 
-		return err
+		res = dto.ItemResponse{
+			ID:           data.ID,
+			Name:         data.Name,
+			CategoryID:   data.CategoryID,
+			MerkID:       data.MerkID,
+			MerkName:     merk.Name,
+			CategoryName: s.cleanPath(cat.Path),
+		}
+		return nil
 	})
 
 	return res, err
@@ -227,9 +231,7 @@ func (s *itemService) UpdateItemVariant(ctx context.Context, req dto.ItemVariant
 		if isExist == false {
 			return constants.ErrDataNotFound
 		}
-		if data.IsLocked {
-			return dto.ErrLockedEdit
-		}
+
 		skuExist, isExist, err := s.variantRepository.GetByName(txCtx, req.SKU)
 		if err != nil {
 			return err
@@ -300,4 +302,47 @@ func (s *itemService) UpdateItemVariant(ctx context.Context, req dto.ItemVariant
 		return nil
 	})
 	return res, err
+}
+
+func (s *itemService) GetDropdownCategory(ctx context.Context, search string, page int) ([]dtoCat.CategoryDropdownDTO, error) {
+	var res []dtoCat.CategoryDropdownDTO
+	datas, err := s.cr.ReadDropdown(ctx, search, 10, page)
+	if err != nil {
+		return res, err
+	}
+	res = make([]dtoCat.CategoryDropdownDTO, len(datas))
+
+	for i, data := range datas {
+		res[i] = dtoCat.CategoryDropdownDTO{
+			ID:   data.ID,
+			Name: s.cleanPath(data.Path),
+		}
+	}
+	return res, nil
+}
+
+func (s *itemService) GetDropdownMerk(ctx context.Context, search string, page int) ([]dtoMerk.MerkDropdownDTO, error) {
+	var res []dtoMerk.MerkDropdownDTO
+	datas, err := s.mr.ReadDropdown(ctx, search, 10, page)
+	if err != nil {
+		return res, err
+	}
+	res = make([]dtoMerk.MerkDropdownDTO, len(datas))
+
+	for i, data := range datas {
+		res[i] = dtoMerk.MerkDropdownDTO{
+			ID:   data.ID,
+			Name: data.Name,
+		}
+	}
+	return res, nil
+}
+func (s *itemService) cleanPath(path string) string {
+	parts := strings.Split(path, "/")
+	for j, p := range parts {
+		if _, after, ok := strings.Cut(p, "-"); ok {
+			parts[j] = after
+		}
+	}
+	return strings.Join(parts, "/")
 }

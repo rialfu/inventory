@@ -1,5 +1,4 @@
 <template>
-
     <header class="bg-white shadow-sm p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <button

@@ -152,7 +152,7 @@ func (c *categoryController) DropDownValue(ctx *gin.Context) {
 	}
 	data, err := c.service.GetDropdown(ctx, search, page)
 	if err != nil {
-		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, err.Error(), nil)
+		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, err.Error(), nil)
 		ctx.AbortWithStatusJSON(500, res)
 		return
 	}

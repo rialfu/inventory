@@ -7,6 +7,7 @@ import (
 	"rialfu/wallet/modules/attribute"
 	"rialfu/wallet/modules/auth"
 	"rialfu/wallet/modules/category"
+	"rialfu/wallet/modules/item"
 	"rialfu/wallet/modules/merk"
 	"rialfu/wallet/modules/user"
 	"rialfu/wallet/providers"
@@ -73,6 +74,7 @@ func main() {
 	auth.RegisterRoutes(server, injector)
 	category.RegisterRoutes(server, injector)
 	merk.RegisterRoutes(server, injector)
+	item.RegisterRoutes(server, injector)
 
 	run(server)
 }

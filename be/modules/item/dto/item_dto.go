@@ -11,7 +11,9 @@ const (
 )
 
 var (
-	ErrLockedEdit = errors.New("locked to edit")
+	ErrLockedEdit       = errors.New("locked to edit")
+	ErrMerkNotFound     = errors.New("Merk Not Found")
+	ErrCategoryNotFound = errors.New("Category Not Found")
 )
 
 type (

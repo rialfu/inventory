@@ -46,7 +46,8 @@ func SetUpTestDatabaseConnection() *gorm.DB {
 	RunExtension(db)
 	if migrate == "y" {
 		db.AutoMigrate(&entities.User{}, &entities.Category{}, &entities.Merk{}, &entities.AttributeName{},
-			&entities.AttributeValue{}, &entities.Item{}, &entities.ItemVariant{}, &entities.ItemVariantAttributeValue{})
+			&entities.AttributeValue{}, &entities.Item{}, &entities.ItemVariant{}, &entities.ItemVariantAttributeValue{},
+			&entities.TransactionType{}, &entities.TransactionHistory{}, &entities.TransactionDetail{})
 	}
 	return db
 }

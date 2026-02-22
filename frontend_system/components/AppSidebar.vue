@@ -7,52 +7,37 @@
     >
         <div class="p-6">
             <div class="text-2xl font-bold mb-6">
-            Admin Panel
+                Admin Panel
             </div>
-
             <nav>
-
-
                 <NuxtLink
-
-                @click="$emit('close')"
-
-                to="/category"
-
-                class="block p-2 hover:bg-gray-100"
-
+                    @click="$emit('close')"
+                    to="/category"
+                    class="block p-2 hover:bg-gray-100"
                 >
 
-                Category
-
-                </NuxtLink>
-
-
-                <NuxtLink
-
-                @click="$emit('close')"
-
-                to="/merk"
-
-                class="block p-2 hover:bg-gray-100"
-
-                >
-
-                Merk
-
+                    Category
                 </NuxtLink>
                 <NuxtLink
-
-                @click="$emit('close')"
-
-                to="/attribute"
-
-                class="block p-2 hover:bg-gray-100"
-
+                    @click="$emit('close')"
+                    to="/merk"
+                    class="block p-2 hover:bg-gray-100"
                 >
-
-                Attribute
-
+                    Merk
+                </NuxtLink>
+                <NuxtLink
+                    @click="$emit('close')"
+                    to="/attribute"
+                    class="block p-2 hover:bg-gray-100"
+                >
+                    Attribute
+                </NuxtLink>
+                <NuxtLink
+                    @click="$emit('close')"
+                    to="/product"
+                    class="block p-2 hover:bg-gray-100"
+                >
+                    Product
                 </NuxtLink>
             </nav>
         </div>

@@ -52,8 +52,7 @@
 
 <script setup>
     import * as v from 'valibot'
-
-        // 1. Definisikan aturan (Schema)
+    import { isAssociativeArray } from '~/utils/helpers'
     const schema = v.object({
         name: v.pipe(v.string(), v.minLength(1, 'Name must fill')),
     })
@@ -94,7 +93,7 @@
             
         },
         listMessage:[],
-        load:true
+        load:false
     })
     
     function goBack(){
@@ -111,6 +110,7 @@
             parent_id: '',
         }
         state.listMessage = []
+        success.value = false;
     }
     function closeButton(){
         resetMessageAll() 
@@ -118,6 +118,8 @@
     
     async function save() {
         resetMessageAll()
+        if(state.load) return
+        state.load = true
         try {
             if(validateForm()){
                 let body = { name: state.form.name }
@@ -130,7 +132,6 @@
             }
             
         } catch (error) {
-            console.log(error.data)
             if(error.data['error'] !== undefined && error.data['error']['Name'] !== undefined ){
                 state.message.name = error.data['error']['Name']
                 state.listMessage = [...state.listMessage, "Name "+error.data['error']['Name']]
@@ -144,17 +145,16 @@
                 }else{
                     state.listMessage = [...state.listMessage, `${error.data['error']}`]
                 }
-                
             }else if(error.data['message'] !=undefined){
                 state.listMessage = [...state.listMessage, error.data['message']]
+            }else{
+                state.listMessage = [...state.listMessage, "Something is wrong"]
             }
-            
-            success.value = false;
+        } finally {
+            state.load = false
         }
     }
-    onMounted(() => {
-        state.load = false
-    })
+    
 </script>
 
 <style lang="scss" scoped>

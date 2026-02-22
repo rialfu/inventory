@@ -12,7 +12,7 @@ const props = defineProps({
     defaultName: { type: String, default: '' },
     error: String,
     label: String,
-    inputId: {type:String, default:useId()},
+    formId: {type:String, default:null}
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -26,7 +26,7 @@ const pending = ref(false)
 const limit = 10
 const page = ref(1)
 const hasMore = ref(true)
-
+const inputId = props.formId
 // --- LOGIC FETCH ---
 const fetchResults = async (isLoadMore = false) => {
     if (!search.value && !isLoadMore) {

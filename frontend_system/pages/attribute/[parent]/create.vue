@@ -61,8 +61,8 @@
 
 <script setup>
     import * as v from 'valibot'
-
-        // 1. Definisikan aturan (Schema)
+    import { isAssociativeArray } from '~/utils/helpers'
+    
     const schema = v.object({
         name: v.pipe(v.string(), v.minLength(1, 'Name must fill')),
     })

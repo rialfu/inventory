@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"rialfu/wallet/database/entities"
 	"rialfu/wallet/modules/category/dto"
 	"rialfu/wallet/modules/category/repository"
@@ -61,7 +60,6 @@ func (s *categoryService) Create(ctx context.Context, ins dto.CategoryCreateRequ
 	return dto.CategoryResponse{ID: res.ID, Name: res.Name, ParentID: res.ParentID, Path: &display}, nil
 }
 func (s *categoryService) GetDropdown(ctx context.Context, search string, page int) ([]dto.CategoryDropdownDTO, error) {
-	fmt.Println("search", search)
 	datas, err := s.repository.ReadDropdown(ctx, search, 10, page)
 	if err != nil {
 		return []dto.CategoryDropdownDTO{}, err

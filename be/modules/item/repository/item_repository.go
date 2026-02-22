@@ -48,6 +48,15 @@ func (r *itemRepository) Create(ctx context.Context, data entities.Item) (entiti
 
 	return data, nil
 }
+func (r *itemRepository) Update(ctx context.Context, data entities.Item) (entities.Item, error) {
+	db := r.getDB(ctx)
+
+	if err := db.WithContext(ctx).Updates(&data).Error; err != nil {
+		return entities.Item{}, err
+	}
+
+	return data, nil
+}
 
 func (r *itemRepository) GetById(ctx context.Context, id string, isLock bool) (entities.Item, bool, error) {
 	db := r.getDB(ctx)
@@ -122,14 +131,4 @@ func (r *itemRepository) ReadAll(ctx context.Context, queryParam map[string][]st
 		return []entities.Item{}, 0, 0, 0, err
 	}
 	return datas, pagination.Page, pagination.Limit, total, nil
-}
-
-func (r *itemRepository) Update(ctx context.Context, data entities.Item) (entities.Item, error) {
-	db := r.getDB(ctx)
-
-	if err := db.WithContext(ctx).Updates(&data).Error; err != nil {
-		return entities.Item{}, err
-	}
-
-	return data, nil
 }

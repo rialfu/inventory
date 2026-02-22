@@ -64,24 +64,19 @@
 </template>
 
 <script setup>
-import { isStatement } from 'typescript';
-
+    import * as v from 'valibot'
+    import { validateFormCustom, isAssociativeArray } from '~/utils/helpers'
 
     definePageMeta({
         layout: 'base'
     });
-// import CustomInput from '~/components/CustomInput.vue';
-// import Dropdown from '~/components/Dropdown.vue';
-
 
     const { $api } = useNuxtApp();
     
-    // const name = ref('')
     const success = ref(false)
     const route = useRoute();
     const router = useRouter()
     const id = route.params.id
-    // console.log(route.params)
     
     const state = reactive({
         form: {
@@ -98,7 +93,14 @@ import { isStatement } from 'typescript';
         listMessage:[],
         load:false
     })
-    
+    const schema = v.object({
+        name: v.pipe(v.string(), v.minLength(1, 'Name must fill')),
+        parent_id: v.optional(
+            v.minValue(1, 'Main Category not suitable')
+        ),
+        
+    })
+
     function goBack(){
         
         router.back();
@@ -113,6 +115,7 @@ import { isStatement } from 'typescript';
             parent_id: '',
         }
         state.listMessage = []
+        success.value = false;
     }
     function closeButton(){
         resetMessageAll() 
@@ -125,25 +128,22 @@ import { isStatement } from 'typescript';
     }
     async function save() {
         resetMessageAll()
+        if(state.load) return
+        state.load = true
         try {
-            if (state.form.name == ""){
-                state.message.name = "Please fill form"
-                return
+            if(validateFormCustom(v, schema, state, ['name', 'parent_id'])){
+                let body = { name: state.form.name }
+                if(state.form.parent_id !== "" && state.form.parent_id !== null){
+                    body['parent_id'] =state.form.parent_id+""
+                }
+                const data1 = await $api('category/'+state.form.id,{
+                    method:'PUT',
+                    body,
+                });
+                success.value = true
             }
-            let body = { name: state.form.name }
-            if(state.form.parent_id !== "" && state.form.parent_id !== null){
-                body['parent_id'] =state.form.parent_id+""
-            }
-            const data1 = await $api('category/'+state.form.id,{
-                method:'PUT',
-                body,
-            });
-            
-            success.value = true
         } catch (error) {
-            console.log(error.data)
             if(error.data['error'] !== undefined && (error.data['error']['Name'] != undefined || error.data['error']['parent'] != undefined)){
-                // err = error.data['error']
                 if(error.data['error']['Name'] != undefined){
                     state.message.name = error.data['error']['Name']
                     state.listMessage = [...state.listMessage, "Name "+error.data['error']['Name']]
@@ -152,16 +152,23 @@ import { isStatement } from 'typescript';
                     state.message.parent_id = error.data['error']['parent']
                     state.listMessage = [...state.listMessage, "Main Category "+error.data['error']['parent']]
                 }
-
-                
-            
-            }else if(error.data['error']){
-                state.listMessage = [...state.listMessage, `${error.data['error']}`]
+            }else if(error.data['error'] !== undefined){
+                if(Array.isArray(error.data['error'])){
+                    state.listMessage = [...state.listMessage, ...(error.data['error'])]
+                }else if(isAssociativeArray(error.data['error'])){
+                    const values = Object.entries(error.data['error']).map(([key, value]) => `${key}: ${value}`)
+                    state.listMessage = [...state.listMessage, ...values]
+                }else{
+                    state.listMessage = [...state.listMessage, `${error.data['error']}`]
+                }
             }else if(error.data['message'] !=undefined){
                 state.listMessage = [...state.listMessage, error.data['message']]
+            }else{
+                state.listMessage = [...state.listMessage, "Something is wrong"]
             }
             
-            success.value = false;
+        } finally {
+            state.load = false
         }
     }
     async function fetch(){
@@ -189,10 +196,8 @@ import { isStatement } from 'typescript';
                 if(split_path.length > 1){
                     split_path = split_path.map((data)=>data.replace(/^\d+-/g, ""))
                     state.form.selected_label = split_path.slice(0, -1).join("/")
-                    // state.form.selected_label = split_path[0:]
                 }
 
-                // state.form.parent_id = resData['parent_id']
             }
             
             console.log(res)

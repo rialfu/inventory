@@ -3,9 +3,10 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
-	"rialfu/wallet/modules/merk/dto"
-	"rialfu/wallet/modules/merk/service"
+	"rialfu/wallet/modules/item/dto"
+	"rialfu/wallet/modules/item/service"
 	"rialfu/wallet/pkg/constants"
 	"rialfu/wallet/pkg/helpers"
 	"rialfu/wallet/pkg/utils"
@@ -16,29 +17,28 @@ import (
 )
 
 type (
-	MerkController interface {
-		GetAllData(ctx *gin.Context)
+	ItemController interface {
+		GetAll(ctx *gin.Context)
 		Create(ctx *gin.Context)
 		Update(ctx *gin.Context)
+		GetDropdownCategory(ctx *gin.Context)
+		GetDropdownMerk(ctx *gin.Context)
 	}
 
-	merkController struct {
-		service service.MerkService
+	itemController struct {
+		service service.ItemService
 		// userValidation *validation.UserValidation
 		// db             *gorm.DB
 	}
 )
 
-func NewMerkController(injector *do.Injector, s service.MerkService) MerkController {
-	// db := do.MustInvokeNamed[*gorm.DB](injector, constants.DB)
-	// userValidation := validation.NewUserValidation()
-	return &merkController{
+func NewItemController(injector *do.Injector, s service.ItemService) ItemController {
+	return &itemController{
 		service: s,
-		// userValidation: userValidation,
 	}
 }
 
-func (c *merkController) GetAllData(ctx *gin.Context) {
+func (c *itemController) GetAll(ctx *gin.Context) {
 	data, err := c.service.GetAll(ctx)
 	if err != nil {
 		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, err.Error(), nil)
@@ -49,8 +49,10 @@ func (c *merkController) GetAllData(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *merkController) Create(ctx *gin.Context) {
-	var req dto.MerkCreateRequest
+func (c *itemController) Create(ctx *gin.Context) {
+	var req dto.ItemCreateRequest
+	var res utils.Response
+	status := 200
 	if err := ctx.ShouldBind(&req); err != nil {
 		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA_FROM_BODY, err.Error(), nil)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
@@ -64,12 +66,10 @@ func (c *merkController) Create(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
 		return
 	}
+	req.ID = nil
 
-	// id := ctx.Param("id")
-	result, err := c.service.Create(ctx.Request.Context(), req)
+	result, err := c.service.CreateOrUpItem(ctx.Request.Context(), req)
 	if err != nil {
-		var res utils.Response
-		var status int
 		if errors.Is(err, constants.ErrValueNotUniq) {
 			res = utils.BuildResponseFailedValidation(map[string]string{"name": constants.MESSAGE_FAILED_VALUE_NOT_UNIQUE}, nil)
 			status = http.StatusBadRequest
@@ -77,17 +77,16 @@ func (c *merkController) Create(ctx *gin.Context) {
 			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_CREATE_DATA, err.Error(), nil)
 			status = http.StatusInternalServerError
 		}
-
 		ctx.AbortWithStatusJSON(status, res)
 		return
 	}
 
-	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_CREATE_DATA, result)
-	ctx.JSON(http.StatusOK, res)
+	res = utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_CREATE_DATA, result)
+	ctx.JSON(status, res)
 }
 
-func (c *merkController) Update(ctx *gin.Context) {
-	var req dto.MerkUpdateRequest
+func (c *itemController) Update(ctx *gin.Context) {
+	var req dto.ItemCreateRequest
 	if err := ctx.ShouldBind(&req); err != nil {
 		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA_FROM_BODY, err.Error(), nil)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
@@ -103,25 +102,57 @@ func (c *merkController) Update(ctx *gin.Context) {
 	}
 
 	id := ctx.Param("id")
-	result, err := c.service.Update(ctx.Request.Context(), req, id)
-	if err != nil {
-		var res utils.Response
-		var status int
-		if errors.Is(err, constants.ErrDataNotFound) {
-			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
-			status = http.StatusNotFound
-		} else if errors.Is(err, constants.ErrValueNotUniq) {
-			res = utils.BuildResponseFailedValidation(map[string]string{"name": constants.MESSAGE_FAILED_VALUE_NOT_UNIQUE}, nil)
-			status = http.StatusBadRequest
-		} else {
-			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, err.Error(), nil)
-			status = http.StatusInternalServerError
-		}
+	// result, err := c.service.Update(ctx.Request.Context(), req, id)
+	// if err != nil {
+	// 	var res utils.Response
+	// 	var status int
+	// 	if errors.Is(err, constants.ErrDataNotFound) {
+	// 		res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
+	// 		status = http.StatusNotFound
+	// 	} else if errors.Is(err, constants.ErrValueNotUniq) {
+	// 		res = utils.BuildResponseFailedValidation(map[string]string{"name": constants.MESSAGE_FAILED_VALUE_NOT_UNIQUE}, nil)
+	// 		status = http.StatusBadRequest
+	// 	} else {
+	// 		res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, err.Error(), nil)
+	// 		status = http.StatusInternalServerError
+	// 	}
 
-		ctx.AbortWithStatusJSON(status, res)
+	// 	ctx.AbortWithStatusJSON(status, res)
+	// 	return
+	// }
+	req.ID = &id
+	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_UPDATE_DATA, req)
+	ctx.JSON(http.StatusOK, res)
+}
+func (c *itemController) GetDropdownMerk(ctx *gin.Context) {
+	search := ctx.Query("search")
+	pageString := ctx.Query("page")
+	page, err := strconv.Atoi(pageString)
+	if err != nil {
+		page = 1
+	}
+	data, err := c.service.GetDropdownMerk(ctx, search, page)
+	if err != nil {
+		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, err.Error(), nil)
+		ctx.AbortWithStatusJSON(500, res)
 		return
 	}
-
-	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_UPDATE_DATA, result)
-	ctx.JSON(http.StatusOK, res)
+	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_LIST_DATA, data)
+	ctx.JSON(200, res)
+}
+func (c *itemController) GetDropdownCategory(ctx *gin.Context) {
+	search := ctx.Query("search")
+	pageString := ctx.Query("page")
+	page, err := strconv.Atoi(pageString)
+	if err != nil {
+		page = 1
+	}
+	data, err := c.service.GetDropdownCategory(ctx, search, page)
+	if err != nil {
+		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, err.Error(), nil)
+		ctx.AbortWithStatusJSON(500, res)
+		return
+	}
+	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_LIST_DATA, data)
+	ctx.JSON(200, res)
 }

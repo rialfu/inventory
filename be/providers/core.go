@@ -16,6 +16,10 @@ import (
 	userController "rialfu/wallet/modules/user/controller"
 	userRepo "rialfu/wallet/modules/user/repository"
 	userService "rialfu/wallet/modules/user/service"
+
+	itemController "rialfu/wallet/modules/item/controller"
+	itemRepo "rialfu/wallet/modules/item/repository"
+	itemService "rialfu/wallet/modules/item/service"
 	"rialfu/wallet/pkg/constants"
 
 	"github.com/samber/do"
@@ -43,13 +47,15 @@ func RegisterDependencies(injector *do.Injector) {
 	mr := merkRepo.NewMerkRepository(db)
 	anr := attrRepo.NewAttributeNameRepository(db)
 	avr := attrRepo.NewAttributeValueRepository(db)
+	ir := itemRepo.NewItemRepository(db)
+	ivr := itemRepo.NewItemVariantRepository(db)
 
 	userService := userService.NewUserService(userRepository, db)
 	authService := authService.NewAuthService(userRepository, jwtService, db)
 	catService := cateService.NewCategoryService(catRepo, db)
 	ms := merkService.NewMerkService(mr, db)
 	as := attrService.NewAttributeService(anr, avr, db)
-
+	is := itemService.NewItemService(ir, ivr, mr, catRepo, avr, db)
 	do.Provide(injector, func(i *do.Injector) (userController.UserController, error) {
 		return userController.NewUserController(i, userService), nil
 	})
@@ -66,5 +72,8 @@ func RegisterDependencies(injector *do.Injector) {
 	})
 	do.Provide(injector, func(i *do.Injector) (merkController.MerkController, error) {
 		return merkController.NewMerkController(i, ms), nil
+	})
+	do.Provide(injector, func(i *do.Injector) (itemController.ItemController, error) {
+		return itemController.NewItemController(i, is), nil
 	})
 }
