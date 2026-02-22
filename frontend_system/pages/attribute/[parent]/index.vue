@@ -65,7 +65,7 @@
 
             <NuxtLink 
                 v-else
-                :to="{ path: `/attribute/${id}/create` }" 
+                :to="{ path: `/attribute/${parent}/create` }" 
                 class="bg-green-600 px-2 py-2 rounded text-gray-100 hover:bg-green-700"
             >
                 Create
@@ -86,7 +86,7 @@
                     <td class="px-6 py-4 whitespace-nowrap">{{ index + 1 }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ data.name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <NuxtLink :to="{ path: `/attribute/${id}/update`,query: { id: data['id'], name:data['name'] } }" class="bg-red-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border border-yellow-600 rounded cursor-pointer mx-2">Edit</NuxtLink>
+                        <NuxtLink :to="{ path: `/attribute/${parent}/update/${data['id']}`,  }" class="bg-red-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border border-yellow-600 rounded cursor-pointer mx-2">Edit</NuxtLink>
                         
                     </td>
                 </tr>
@@ -101,14 +101,14 @@
     const { $api } = useNuxtApp();
     const router = useRouter();
     const route = useRoute()
-    const { id } = route.params
+    const { parent } = route.params
     const notFound = ref(false)
-    const showTable = ref({
+    let showTable = reactive({
         name:'',
         attribute_value:[],
         isLoad:true
-
     })
+    
     definePageMeta({
         layout: 'base'
     });
@@ -122,15 +122,20 @@
         try {
            
             
-            const res = await $api(`attribute/${id}/attribute-value`,{
+            const res = await $api(`attribute/${parent}/attribute-value`,{
                 method:'GET'
             });
             console.log(res)
             if(res['data'] !== undefined){
                 if(res['data']['name'] !== undefined){
-                    showTable.value.name = res['data']['name']
+                    showTable.name = res['data']['name']
                 }
-                console.log(res['data'])
+                if(res['data']['values'] !== undefined){
+                    if(res['data']['values']['data']){
+                        console.log(res['data']['values']['data'])
+                        showTable.attribute_value = [...showTable.attribute_value, ...res['data']['values']['data']]
+                    }
+                }
                 // showTable.value = data['data']
             }
         } catch (error) {
@@ -140,13 +145,12 @@
             console.log(error.statusCode)
             console.error('Failed to fetch data:', error);
         }finally{
-            showTable.value.isLoad = false
+            showTable.isLoad = false
         }
     }
 
     onMounted(() => {
         fetchData()
-        console.log(route.path.startsWith("/attribute"))
     })
 </script>
 

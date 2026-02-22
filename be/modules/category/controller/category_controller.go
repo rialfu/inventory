@@ -42,6 +42,7 @@ func (c *categoryController) ReadAll(ctx *gin.Context) {
 	if exist && val != "" {
 		parentID = &val
 	}
+
 	data, path, err := c.service.GetAll(ctx, parentID, ctx.Request.URL.Query())
 	if err != nil {
 		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, err.Error(), nil)

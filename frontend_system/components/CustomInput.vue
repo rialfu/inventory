@@ -1,31 +1,3 @@
-<script setup>
-const props = defineProps({
-    modelValue: [String, Number],
-    label: { type: String, default: 'Form Input' },
-    // Kita beri nilai default null, lalu kita fallback ke useId()
-    id: { type: String, default: null }, 
-    type: { type: String, default: 'text' },
-    placeholder: String,
-    error: String,
-})
-
-const emit = defineEmits(['update:modelValue', 'change'])
-
-// Otomatis generate ID unik jika prop 'id' tidak diisi
-const inputId = props.id || useId() 
-
-const handleInput = (event) => {
-    emit('update:modelValue', event.target.value)
-}
-
-watch(() => props.modelValue, (newVal) => {
-    console.log(newVal)
-//   if (newVal) {
-//     search.value = newVal // Masukkan nama dari API parent ke kotak input child
-//   }
-}, { immediate: true }) 
-</script>
-
 <template>
     <label 
       v-if="label" 
@@ -40,10 +12,16 @@ watch(() => props.modelValue, (newVal) => {
         :type="type"
         :value="modelValue"
         @input="handleInput"
+        :readonly="readOnly"
         :placeholder="placeholder"
         :class="[
-            'border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all',
-            error ? 'border-red-500' : 'border-gray-300'
+            'border rounded w-full py-2 px-3 leading-tight focus:outline-none transition-all',
+            // 'border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all',
+            error ? 'border-red-500' : 'border-gray-300',
+            readOnly
+                ? 'bg-gray-100 text-gray-500 cursor-not-allowed pointer-events-none'
+                : 'bg-white text-gray-700 focus:ring-1 focus:ring-blue-500'
+
         ]"
     />
     
@@ -61,3 +39,27 @@ watch(() => props.modelValue, (newVal) => {
     </Transition>
     
 </template>
+
+<script setup>
+const props = defineProps({
+    modelValue: [String, Number],
+    label: { type: String, default: 'Form Input' },
+    // Kita beri nilai default null, lalu kita fallback ke useId()
+    id: { type: String, default: null }, 
+    type: { type: String, default: 'text' },
+    placeholder: String,
+    error: String,
+    readOnly: { type:Boolean, default:false }
+})
+
+const emit = defineEmits(['update:modelValue', 'change'])
+
+// Otomatis generate ID unik jika prop 'id' tidak diisi
+const inputId = props.id || useId() 
+
+const handleInput = (event) => {
+    emit('update:modelValue', event.target.value)
+}
+
+</script>
+

@@ -21,6 +21,7 @@ type (
 		GetByNameOrId(ctx context.Context, id string, name string) (entities.AttributeValue, bool, error)
 		GetByIds(ctx context.Context, id []string) ([]entities.AttributeValue, error)
 		GetByIdsWithAttrName(ctx context.Context, id []string) ([]entities.AttributeValue, error)
+		GetByIdWithAttrName(ctx context.Context, id string) (entities.AttributeValue, bool, error)
 	}
 
 	attributeValueRepository struct {
@@ -86,6 +87,17 @@ func (r *attributeValueRepository) GetByIdsWithAttrName(ctx context.Context, id 
 
 	return datas, nil
 }
+func (r *attributeValueRepository) GetByIdWithAttrName(ctx context.Context, id string) (entities.AttributeValue, bool, error) {
+	db := r.getDB(ctx)
+	var data entities.AttributeValue
+	if err := db.WithContext(ctx).Where("id = ?", id).Preload("AttributeName").Take(&data).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.AttributeValue{}, false, nil
+		}
+		return entities.AttributeValue{}, false, err
+	}
+	return data, true, nil
+}
 
 func (r *attributeValueRepository) GetByNameOrId(ctx context.Context, id string, name string) (entities.AttributeValue, bool, error) {
 	db := r.getDB(ctx)
@@ -125,7 +137,7 @@ func (r *attributeValueRepository) ReadAll(ctx context.Context, queryParam map[s
 func (r *attributeValueRepository) ReadAllWithParent(ctx context.Context, queryParam map[string][]string, parentId string) ([]entities.AttributeValue, int, int, int64, error) {
 	var datas []entities.AttributeValue
 	db := r.db.Model(&entities.AttributeValue{})
-	db = db.Preload("AttributeName")
+	// db = db.Preload("AttributeName")
 	db = db.Where("attribute_name_id = ?", parentId)
 	db, pagination := helpers.ApplyPagination(db, &entities.AttributeValue{}, queryParam)
 

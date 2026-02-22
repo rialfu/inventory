@@ -17,10 +17,11 @@ type AttributeService interface {
 	CreateAttributeName(ctx context.Context, req dto.AttributeNameCreateRequest) (dto.AttributeNameResponse, error)
 	CreateAttributeValue(ctx context.Context, req dto.AttributeValueCreateRequest) (dto.AttributeValueResponse, error)
 	UpdateAttributeName(ctx context.Context, req dto.AttributeNameUpdateRequest, id string) (dto.AttributeNameResponse, error)
-	UpdateAttributeValue(ctx context.Context, req dto.AttributeValueUpdateRequest, id string) (dto.AttributeValueResponse, error)
+	UpdateAttributeValue(ctx context.Context, req dto.AttributeValueUpdateRequest, parent string) (dto.AttributeValueResponse, error)
 	GetAllAttributeName(ctx *gin.Context) (helpers.PaginateData[dto.AttributeNameResponse], error)
 	GetAllAttributeValueBasedParent(ctx *gin.Context, parentId string) (dto.AttributeNameWithValueResponse, error)
 	GetAttributeName(ctx context.Context, id string) (dto.AttributeNameResponse, error)
+	GetAttributeValue(ctx context.Context, id string, parent string) (dto.AttributeValueResponse, error)
 }
 
 type attributeService struct {
@@ -41,26 +42,6 @@ func NewAttributeService(
 	}
 }
 
-func (s *attributeService) CreateAttributeName(ctx context.Context, req dto.AttributeNameCreateRequest) (dto.AttributeNameResponse, error) {
-	_, isExist, err := s.anrepository.GetByName(ctx, req.Name)
-
-	if err != nil {
-		return dto.AttributeNameResponse{}, err
-	}
-	if isExist {
-		return dto.AttributeNameResponse{}, constants.ErrValueNotUniq
-	}
-	data := entities.AttributeName{
-		AttributeName: req.Name,
-	}
-	updated, err := s.anrepository.Create(ctx, data)
-	res := dto.AttributeNameResponse{
-		ID:   updated.ID,
-		Name: updated.AttributeName,
-	}
-
-	return res, err
-}
 func (s *attributeService) GetAttributeName(ctx context.Context, id string) (dto.AttributeNameResponse, error) {
 	data, isExist, err := s.anrepository.GetById(ctx, id)
 
@@ -79,26 +60,26 @@ func (s *attributeService) GetAttributeName(ctx context.Context, id string) (dto
 	return res, err
 }
 
-func (s *attributeService) CreateAttributeValue(ctx context.Context, req dto.AttributeValueCreateRequest) (dto.AttributeValueResponse, error) {
-	an, isExist, err := s.anrepository.GetById(ctx, req.AttributeNameID)
+func (s *attributeService) GetAttributeValue(ctx context.Context, id string, parent string) (dto.AttributeValueResponse, error) {
+	var res dto.AttributeValueResponse
+	data, isExist, err := s.avrepository.GetByIdWithAttrName(ctx, id)
+
 	if err != nil {
-		return dto.AttributeValueResponse{}, err
+		return res, err
 	}
 	if isExist == false {
-		return dto.AttributeValueResponse{}, constants.ErrDataNotFound
-	}
-	data := entities.AttributeValue{
-		AttributeValue:  req.Name,
-		AttributeNameID: an.ID,
-	}
-	updated, err := s.avrepository.Create(ctx, data)
-	res := dto.AttributeValueResponse{
-		ID:              updated.ID,
-		Name:            updated.AttributeValue,
-		AttributeName:   &updated.AttributeName.AttributeName,
-		AttributeNameID: &updated.AttributeName.ID,
+		return res, constants.ErrDataNotFound
 	}
 
+	num, err := strconv.ParseUint(parent, 10, 64)
+	if data.AttributeName.ID != num {
+		return res, constants.ErrDataNotFound
+	}
+
+	res.Name = data.AttributeValue
+	res.ID = data.ID
+	res.AttributeNameID = &data.AttributeName.ID
+	res.AttributeName = &data.AttributeName.AttributeName
 	return res, err
 }
 
@@ -147,19 +128,65 @@ func (s *attributeService) GetAllAttributeValueBasedParent(ctx *gin.Context, par
 	res.Values = helpers.PaginateData[dto.AttributeValueResponse]{Data: results, Limit: limit, Page: page, Total: total}
 	return res, nil
 }
+func (s *attributeService) CreateAttributeName(ctx context.Context, req dto.AttributeNameCreateRequest) (dto.AttributeNameResponse, error) {
+	_, isExist, err := s.anrepository.GetByName(ctx, req.Name)
 
+	if err != nil {
+		return dto.AttributeNameResponse{}, err
+	}
+	if isExist {
+		return dto.AttributeNameResponse{}, constants.ErrValueNotUniq
+	}
+	data := entities.AttributeName{
+		AttributeName: req.Name,
+	}
+	updated, err := s.anrepository.Create(ctx, data)
+	res := dto.AttributeNameResponse{
+		ID:   updated.ID,
+		Name: updated.AttributeName,
+	}
+
+	return res, err
+}
+func (s *attributeService) CreateAttributeValue(ctx context.Context, req dto.AttributeValueCreateRequest) (dto.AttributeValueResponse, error) {
+	an, isExist, err := s.anrepository.GetById(ctx, req.AttributeNameID)
+	if err != nil {
+		return dto.AttributeValueResponse{}, err
+	}
+	if isExist == false {
+		return dto.AttributeValueResponse{}, constants.ErrDataNotFound
+	}
+	data := entities.AttributeValue{
+		AttributeValue:  req.Name,
+		AttributeNameID: an.ID,
+	}
+	updated, err := s.avrepository.Create(ctx, data)
+	res := dto.AttributeValueResponse{
+		ID:              updated.ID,
+		Name:            updated.AttributeValue,
+		AttributeName:   &updated.AttributeName.AttributeName,
+		AttributeNameID: &updated.AttributeName.ID,
+	}
+
+	return res, err
+}
 func (s *attributeService) UpdateAttributeName(ctx context.Context, req dto.AttributeNameUpdateRequest, id string) (dto.AttributeNameResponse, error) {
-	data, isExist, err := s.anrepository.GetByNameOrId(ctx, id, req.Name)
+	data, isExist, err := s.anrepository.GetById(ctx, id)
 	if err != nil {
 		return dto.AttributeNameResponse{}, err
 	}
 	if isExist == false {
-		if strconv.FormatUint(data.ID, 10) != id {
+		return dto.AttributeNameResponse{}, constants.ErrDataNotFound
+	}
+	dup, isExist, err := s.anrepository.GetByName(ctx, req.Name)
+	if err != nil {
+		return dto.AttributeNameResponse{}, err
+	}
+	if isExist {
+		if dup.ID != data.ID {
 			return dto.AttributeNameResponse{}, constants.ErrValueNotUniq
 		}
-
 	}
-
 	data.AttributeName = req.Name
 
 	updated, err := s.anrepository.Update(ctx, data)
@@ -170,29 +197,26 @@ func (s *attributeService) UpdateAttributeName(ctx context.Context, req dto.Attr
 
 	return res, err
 }
-func (s *attributeService) UpdateAttributeValue(ctx context.Context, req dto.AttributeValueUpdateRequest, id string) (dto.AttributeValueResponse, error) {
-	data, isExist, err := s.avrepository.GetById(ctx, id)
+func (s *attributeService) UpdateAttributeValue(ctx context.Context, req dto.AttributeValueUpdateRequest, parent string) (dto.AttributeValueResponse, error) {
+	var res dto.AttributeValueResponse
+	data, isExist, err := s.avrepository.GetById(ctx, req.AttributeValueID)
 	if err != nil {
-		return dto.AttributeValueResponse{}, err
+		return res, err
 	}
 	if isExist == false {
-		if strconv.FormatUint(data.ID, 10) != id {
-			return dto.AttributeValueResponse{}, constants.ErrValueNotUniq
-		}
-
+		return res, constants.ErrDataNotFound
 	}
-	an, isExist, err := s.anrepository.GetById(ctx, req.AttributeNameID)
+	an, isExist, err := s.anrepository.GetById(ctx, parent)
 	if err != nil {
-		return dto.AttributeValueResponse{}, err
+		return res, err
 	}
 	if isExist == false {
-		return dto.AttributeValueResponse{}, constants.ErrDataNotFound
+		return res, constants.ErrDataNotFound
 	}
 	data.AttributeValue = req.Name
-	data.AttributeNameID = an.ID
 
 	updated, err := s.avrepository.Update(ctx, data)
-	res := dto.AttributeValueResponse{
+	res = dto.AttributeValueResponse{
 		ID:              updated.ID,
 		Name:            updated.AttributeValue,
 		AttributeName:   &an.AttributeName,

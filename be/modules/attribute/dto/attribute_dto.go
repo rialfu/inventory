@@ -34,7 +34,7 @@ type (
 	}
 	AttributeValueCreateRequest struct {
 		Name            string `json:"name" form:"name" validate:"required,min=2,max=50"`
-		AttributeNameID string `json:"attribute_name" form:"attribute_name" validate:"required"`
+		AttributeNameID string
 	}
 	AttributeNameWithValueResponse struct {
 		ID     uint64                                       `json:"id"`
@@ -49,8 +49,8 @@ type (
 	}
 
 	AttributeValueUpdateRequest struct {
-		Name            string `json:"name" form:"name" validate:"required,min=2,max=50"`
-		AttributeNameID string `json:"attribute_name" form:"attribute_name" validate:"required"`
+		Name             string `json:"name" form:"name" validate:"required,min=2,max=50"`
+		AttributeValueID string `json:"id" form:"id" validate:"required"`
 	}
 
 	// AttributeNameUpdateResponse struct {

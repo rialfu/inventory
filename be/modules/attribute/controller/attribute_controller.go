@@ -24,6 +24,7 @@ type (
 		CreateAttributeValue(ctx *gin.Context)
 		UpdateAttributeValue(ctx *gin.Context)
 		GetAllAttributeValueBasedParent(ctx *gin.Context)
+		GetAttributeValue(ctx *gin.Context)
 	}
 
 	attributeController struct {
@@ -55,7 +56,7 @@ func (c *attributeController) GetAllDataAttributeName(ctx *gin.Context) {
 func (c *attributeController) GetAttributeName(ctx *gin.Context) {
 	id := ctx.Param("parent")
 	if id == "" {
-		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
+		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
 		status := http.StatusNotFound
 		ctx.AbortWithStatusJSON(status, res)
 		return
@@ -79,33 +80,6 @@ func (c *attributeController) GetAttributeName(ctx *gin.Context) {
 	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_DATA, data)
 	ctx.JSON(http.StatusOK, res)
 }
-func (c *attributeController) GetAllAttributeValueBasedParent(ctx *gin.Context) {
-	var res utils.Response
-	status := 200
-	id := ctx.Param("parent")
-	if id == "" {
-		res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
-		status = http.StatusNotFound
-		ctx.AbortWithStatusJSON(status, res)
-		return
-	}
-	data, err := c.service.GetAllAttributeValueBasedParent(ctx, id)
-	if err != nil {
-		if errors.Is(err, constants.ErrDataNotFound) {
-			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
-			status = http.StatusNotFound
-		} else {
-			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_LIST_DATA, err.Error(), nil)
-			status = http.StatusInternalServerError
-		}
-
-		ctx.AbortWithStatusJSON(status, res)
-		return
-	}
-	res = utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_GET_LIST_DATA, data)
-	ctx.JSON(http.StatusOK, res)
-
-}
 
 func (c *attributeController) CreateAttributeName(ctx *gin.Context) {
 	var req dto.AttributeNameCreateRequest
@@ -125,43 +99,6 @@ func (c *attributeController) CreateAttributeName(ctx *gin.Context) {
 
 	// id := ctx.Param("id")
 	result, err := c.service.CreateAttributeName(ctx.Request.Context(), req)
-	if err != nil {
-		var res utils.Response
-		var status int
-		if errors.Is(err, constants.ErrValueNotUniq) {
-			res = utils.BuildResponseFailedValidation(map[string]string{"name": constants.MESSAGE_FAILED_VALUE_NOT_UNIQUE}, nil)
-			status = http.StatusBadRequest
-		} else {
-			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_CREATE_DATA, err.Error(), nil)
-			status = http.StatusInternalServerError
-		}
-
-		ctx.AbortWithStatusJSON(status, res)
-		return
-	}
-
-	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_CREATE_DATA, result)
-	ctx.JSON(http.StatusOK, res)
-}
-
-func (c *attributeController) CreateAttributeValue(ctx *gin.Context) {
-	var req dto.AttributeValueCreateRequest
-	if err := ctx.ShouldBind(&req); err != nil {
-		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA_FROM_BODY, err.Error(), nil)
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
-		return
-	}
-	validate := validator.New()
-	if err := validate.Struct(req); err != nil {
-		var validationMessages = map[string]map[string]string{}
-		errs := helpers.TranslateValidationError(err, validationMessages)
-		res := utils.BuildResponseFailedValidation(errs, nil)
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
-		return
-	}
-
-	// id := ctx.Param("id")
-	result, err := c.service.CreateAttributeValue(ctx.Request.Context(), req)
 	if err != nil {
 		var res utils.Response
 		var status int
@@ -205,45 +142,6 @@ func (c *attributeController) UpdateAttributeName(ctx *gin.Context) {
 		return
 	}
 	result, err := c.service.UpdateAttributeName(ctx.Request.Context(), req, id)
-	if err != nil {
-		var res utils.Response
-		var status int
-		if errors.Is(err, constants.ErrDataNotFound) {
-			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, constants.MESSAGE_FAILED_DATA_NOT_FOUND, nil)
-			status = http.StatusNotFound
-		} else if errors.Is(err, constants.ErrValueNotUniq) {
-			res = utils.BuildResponseFailedValidation(map[string]string{"name": constants.MESSAGE_FAILED_VALUE_NOT_UNIQUE}, nil)
-			status = http.StatusBadRequest
-		} else {
-			res = utils.BuildResponseFailed(constants.MESSAGE_FAILED_UPDATE_DATA, err.Error(), nil)
-			status = http.StatusInternalServerError
-		}
-
-		ctx.AbortWithStatusJSON(status, res)
-		return
-	}
-
-	res := utils.BuildResponseSuccess(constants.MESSAGE_SUCCESS_UPDATE_DATA, result)
-	ctx.JSON(http.StatusOK, res)
-}
-func (c *attributeController) UpdateAttributeValue(ctx *gin.Context) {
-	var req dto.AttributeValueUpdateRequest
-	if err := ctx.ShouldBind(&req); err != nil {
-		res := utils.BuildResponseFailed(constants.MESSAGE_FAILED_GET_DATA_FROM_BODY, err.Error(), nil)
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
-		return
-	}
-	validate := validator.New()
-	if err := validate.Struct(req); err != nil {
-		var validationMessages = map[string]map[string]string{}
-		errs := helpers.TranslateValidationError(err, validationMessages)
-		res := utils.BuildResponseFailedValidation(errs, nil)
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
-		return
-	}
-
-	id := ctx.Param("id")
-	result, err := c.service.UpdateAttributeValue(ctx.Request.Context(), req, id)
 	if err != nil {
 		var res utils.Response
 		var status int

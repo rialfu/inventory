@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <UApp>
 
   <div class="flex h-screen bg-gray-100 font-sans antialiased">
@@ -129,10 +129,8 @@ const openMenus = ref([]); // Array untuk menyimpan ID menu yang sedang terbuka
 const toggleMenu = (menuId) => {
   const index = openMenus.value.indexOf(menuId);
   if (index > -1) {
-    // Menu sudah terbuka, tutup
     openMenus.value.splice(index, 1);
   } else {
-    // Menu tertutup, buka
     openMenus.value.push(menuId);
   }
 };
@@ -148,10 +146,8 @@ watch(() => route.path, (newPath) => {
       openMenus.value.push('main1');
     }
   } else {
-    // Opsi: Tutup menu jika tidak ada sub-menu yang aktif di dalamnya
     const index = openMenus.value.indexOf('main1');
     if (index > -1 && !newPath.startsWith('/admin/dashboard') && !newPath.startsWith('/admin/users')) {
-      // openMenus.value.splice(index, 1); // Uncomment jika ingin menutup otomatis
     }
   }
 
@@ -170,14 +166,56 @@ watch(() => route.path, (newPath) => {
 </script>
 
 <style scoped >
-/*
-  Jika Anda perlu menimpa atau menambahkan gaya spesifik untuk layout ini yang tidak bisa dihandle Tailwind
-  atau jika Anda ingin mengisolasi gaya ke layout ini.
-*/
-/* .router-link-active {
-  @apply bg-blue-500 text-white !important; 
-} */
-/* .router-link-active svg {
-    @apply text-white; 
-} */
-</style>
+
+</style> -->
+
+<template>
+
+<UApp>
+
+<div class="lg:flex h-screen bg-gray-100">
+
+
+    <AppSidebar
+    :open="isSidebarOpen"
+    @close="isSidebarOpen=false"
+    />
+
+
+    <AppOverlay
+    :open="isSidebarOpen"
+    @close="isSidebarOpen=false"
+    />
+
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+
+
+        <AppHeader
+          @toggleSidebar="isSidebarOpen=true"
+        />
+
+
+        <main class="flex-1 overflow-auto p-6">
+
+            <slot></slot>
+
+        </main>
+
+
+    </div>
+
+
+</div>
+
+</UApp>
+
+</template>
+
+
+
+<script setup>
+
+const isSidebarOpen = ref(false)
+
+</script>

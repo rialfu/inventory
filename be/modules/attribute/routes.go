@@ -18,6 +18,7 @@ func RegisterRoutes(server *gin.Engine, injector *do.Injector) {
 		routes.PUT("/:parent", controller.UpdateAttributeName)
 		routes.GET("/:parent/attribute-value", controller.GetAllAttributeValueBasedParent)
 		routes.GET("/:parent", controller.GetAttributeName)
+		routes.GET("/:parent/attribute-value/:id", controller.GetAttributeValue)
 		routes.POST("/:parent/attribute-value", controller.CreateAttributeValue)
 		routes.PUT("/:parent/attribute-value/", controller.UpdateAttributeValue)
 	}
