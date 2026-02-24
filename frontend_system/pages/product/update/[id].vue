@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1 class="text-3xl font-bold mb-6">Create Category</h1>
+        <h1 class="text-3xl font-bold mb-6">Update Product</h1>
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
            
             <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4"><span @click="goBack" class="cursor-pointer">←</span> Form</h3>
@@ -29,47 +29,148 @@
                     <li class="mb-1" >Success Create</li>
                 </ul>
             </div>
-            <div class="grid grid-cols-3 gap-4">
-                <div class="mb-4">
-                    <CustomInput
-                        v-model="state.form.name"
-                        label="Name"
-                        id="name"
-                        placeholder="Please fill category name"
-                        :error="state.message.name"
-                    />
+            <div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="mb-4 md:col-span-2 lg:col-span-1">
+                        <CustomInput
+                            v-model="state.form.name"
+                            label="Name"
+                            id="name"
+                            placeholder="Please fill category name"
+                            :error="state.message.name"
+                        />
+                    </div>
+                    <div class="mb-4">
+                        <Dropdown
+                            v-model="state.form.category_id" 
+                            placeholder="Find Category " 
+                            url="/item/option/category"
+                            id-value="id",
+                            text="name"
+                            label="Category"
+                            :default-name="state.form.category_selected_label"
+                            :error="state.message.category_id"
+                        />
+                    </div>
+                    <div class="mb-4">
+                        <Dropdown
+                            v-model="state.form.merk_id" 
+                            placeholder="Find Merk" 
+                            url="/item/option/merk"
+                            id-value="id",
+                            text="name"
+                            label="Merk"
+                            :default-name="state.form.merk_selected_label"
+                            :error="state.message.merk_id"
+                        />
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <Dropdown
-                        v-model="state.form.category_id" 
-                        placeholder="Find Category " 
-                        url="/item/option/category"
-                        id-value="id",
-                        text="name"
-                        label="Category"
-                        :input-id="state.message.category_id"
-                        :error="state.message.category_id"
-                    />
-                </div>
-                <div class="mb-4">
-                    <Dropdown
-                        v-model="state.form.merk_id" 
-                        placeholder="Find Merk" 
-                        url="/item/option/merk"
-                        id-value="id",
-                        text="name"
-                        label="Merk"
-                        :input-id="state.message.merk_id"
-                        :error="state.message.merk_id"
-                    />
-                </div>
+                
+                
+                <CustomButtonForm
+                    :is-load="state.load"
+                    
+                    @save="save"
+                />
+            </div>
+            <div class="my-4">
+                <CustomButtonForm
+                    :is-load="false"
+                    @save="AddVariant"
+                    button-name="Add Variant"
+                />
             </div>
             
-            
-            <CustomButtonForm
-                :is-load="state.load"
-                @save="save"
-            />
+            <div v-for="(variant, index) in stateVariants" :key="index" class="border rounded py-2 px-3 mb-2">
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                    <div class="mb-2">
+                        <CustomInput
+                            v-model="stateVariants[index].form.sku"
+                            label="SKU"
+                            placeholder="Please fill sku"
+                            :error="stateVariants[index].message.sku"
+                        />
+                    </div>
+                    <div class="mb-2">
+                        <CustomInput
+                            v-model="stateVariants[index].form.name"
+                            label="Name"
+                            placeholder="Please fill name"
+                            :error="stateVariants[index].message.name"
+                        />
+                    </div>
+                    <div class="mb-2">
+                        <CustomInput
+                            v-model="stateVariants[index].form.description"
+                            label="Description"
+                            placeholder=""
+                            :error="stateVariants[index].message.description"
+                        />
+                    </div>
+                    
+                </div>
+                <div class="mb-2">
+                    <CustomButtonForm
+                        :is-load="variant.isLoad"
+                        color-button="success"
+                        @save="()=>AddAttribute(index)"
+                        button-name="Add Attribute"
+                    />
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-4 mb-3" v-for="(attribute, j) in variant.form.attributes">
+                    <!-- {{ attribute }} -->
+                    <div>
+                        <div class="flex">
+                            <label class="block text-gray-700 text-sm font-bold mb-2"> 
+                                Attribute 
+                                
+                            </label>
+                            <button 
+                                @click="()=>RemoveAttribute(index, j)"
+                                class="ms-2 font-bold text-xs px-2 py-1 rounded focus:outline-none transition-colors duration-200 cursor-pointer bg-red-500 hover:bg-red-700 text-white shadow-md">
+                                X
+                            </button> 
+                        </div>
+                        
+                        <Dropdown 
+                            v-model="variant.form.attributes[j].id" 
+                            placeholder="Find Attribute" 
+                            url="/item/option/attribute-name"
+                            id-value="id",
+                            text="name"
+                            :default-name="variant.form.attributes[j].selected_label"
+                        />
+                    </div>
+                    
+                    <MultiSelect v-if="attribute.id !== null"
+                        v-model="variant.form.attributes[j].values" 
+                        placeholder="Find Merk" 
+                        :url="`/item/option/attribute-value/${attribute.id}`"
+                        id-value="id",
+                        text="name"
+                        label="Attribute Value"
+                        
+                    />
+                </div>
+                <div class="flex gap-3 mt-2">
+                    <CustomButtonForm
+                        :is-load="variant.isLoad"
+                        @save="()=>saveVariant(index)"
+                        button-name="Save"
+                    />
+                    <template v-if="variant.form.id === null">
+                        <CustomButtonForm
+                            :is-load="variant.isLoad"
+                            color-button="danger"
+                            @save="()=>DeleteVariant(index)"
+                            button-name="Delete"
+                        />
+                    </template>
+                    
+                </div>
+            </div>
                 
         </div>
     </div>
@@ -78,14 +179,19 @@
 <script setup>
     import * as v from 'valibot'
     import { validateFormCustom, isAssociativeArray } from '~/utils/helpers'
+    import { useToastStore } from '~/stores/useToastStore'
+    
     definePageMeta({
         layout: 'base'
     });
     const { $api } = useNuxtApp();
-    
+
+    const toastStore = useToastStore()
     const success = ref(false)
     const router = useRouter();
-    
+    const route = useRoute();
+    const id = route.params.id
+
     const schema = v.object({
         name: v.pipe(v.string(), v.minLength(1, 'Name must fill')),
         category_id: v.pipe(
@@ -113,8 +219,39 @@
             
         },
         listMessage:[],
-        load:true
+        load:false
     })
+    const createDefaultFormatVariant = ()=> {
+       return {
+            form:{
+                id:null,
+                sku:'',
+                name:'',
+                description:'',
+                image_url:'',
+                stock:0,
+                values:[],
+                attributes:[]
+            },
+            message:{
+                sku:'',
+                name:'',
+                description:'',
+                values:''
+            },
+            isLoad:false,
+       }
+        
+    }
+    const createDefaultFormatAttribute = ()=>{
+        return {
+            id:null,
+            selected_label:'',
+            values:[]
+        }
+       
+    }
+    const stateVariants = ref([])
     
     function goBack(){
         
@@ -139,9 +276,9 @@
     }
     async function save() {
         resetMessageAll()
+        return
         try {
-            // validateFormCustom(v, schema, state, ['name', 'merk_id', 'category_id'])
-            if(true){
+            if(validateFormCustom(v, schema, state, ['name', 'merk_id', 'category_id'])){
                 let body = { name:state.form.name, category:state.form.category_id,
                     merk:state.form.merk_id 
                 }
@@ -187,8 +324,83 @@
             success.value = false;
         }
     }
+    function AddVariant(){
+        stateVariants.value.push(createDefaultFormatVariant())
+    }
+    function DeleteVariant(index){
+        const res = stateVariants.value[index]
+        if(res == undefined || res['id'] != null) return
+        stateVariants.value.splice(index, 1)
+    }
+
+    function AddAttribute(index){
+        stateVariants.value[index].form.attributes.push(createDefaultFormatAttribute())
+    }
+    function RemoveAttribute(i, j){
+        stateVariants.value[i].form.attributes.splice(j, 1)
+    }
+    async function saveVariant(index){
+        const val = stateVariants.value[index]
+        if(val === undefined || val === null){
+            return
+        }
+        stateVariants.value[index].isLoad = true
+        console.log(val)
+        stateVariants.value[index].isLoad = false
+    }
+    async function fetchItem(){
+        try{
+            const res = await $api(`item/${id}/item`,{
+                method:'GET',    
+            });
+            if(res['data'] === undefined){
+                toastStore.addToast('Data not found')
+                return
+            }
+            if(res['data'] !== undefined){
+                if(res['data']['merk_name'] !== undefined){
+                    state.form.merk_selected_label = res['data']['merk_name'] ?? ''
+                }
+                if(res['data']['merk_id'] !== undefined){
+                    state.form.merk_id = res['data']['merk_id'] ?? ''
+                }
+                if(res['data']['category_id'] !== undefined){
+                    state.form.category_id = res['data']['category_id'] ?? ''
+                }
+                if(res['data']['category_name'] !== undefined){
+                    state.form.category_selected_label = res['data']['category_name'] ?? ''
+                }
+                if(res['data']['name'] !== undefined){
+                    state.form.name = res['data']['name'] ?? ''
+                }
+            }
+            console.log(res)
+    
+        }catch(err){
+            // err.s
+        }
+       
+    }
+    async function fetchVariant(){
+        try{
+            const res = await $api(`item/${id}/variant`,{
+                method:'GET',    
+            });
+            if(res['data'] === undefined){
+                toastStore.addToast('Data not found')
+                return
+            }
+            
+            console.log(res)
+    
+        }catch(err){
+            // err.s
+        }
+       
+    }
     onMounted(() => {
-        state.load = false
+        fetchItem()
+        fetchVariant()
     })
 </script>
 

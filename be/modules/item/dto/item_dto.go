@@ -45,14 +45,16 @@ type (
 		SKU         string                  `json:"sku"`
 		Description string                  `json:"description"`
 		Attributes  []AttributeNameResponse `json:"attributes"`
+		Stock       uint32                  `json:"stock"`
+		ImageUrl    string                  `json:"image_url"`
 	}
 	AttributeNameResponse struct {
-		ID    *uint64                  `json:"id,omitempty"`
+		ID    uint64                   `json:"id,omitempty"`
 		Name  string                   `json:"name"`
 		Value []AttributeValueResponse `json:"value"`
 	}
 	AttributeValueResponse struct {
-		ID   *uint64 `json:"id,omitempty"`
-		Name string  `json:"name"`
+		ID   uint64 `json:"id,omitempty"`
+		Name string `json:"name"`
 	}
 )

@@ -17,13 +17,15 @@
                 <slot></slot>
             </main>
         </div>
+        <BaseToast :toasts="toastStore.toasts"/>
     </div>
 </template>
 
 
 
 <script setup>
-
-const isSidebarOpen = ref(false)
+    import { useToastStore } from '~/stores/useToastStore'
+    const toastStore = useToastStore()
+    const isSidebarOpen = ref(false)
 
 </script>

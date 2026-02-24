@@ -2,10 +2,10 @@
     <div>
         <h1 class="text-3xl font-bold mb-6 text-slate-600">Merk</h1>
         <div class="bg-white  p-6 rounded-lg shadow-md">
-            <BaseToast
+            <!-- <BaseToast
                 :show="errorMessage !== '' && errorMessage !== null"
                 :message="errorMessage"
-            />
+            /> -->
             <h3 class="text-lg font-semibold text-gray-700 mb-4">List data</h3>
             <NuxtLink to="/product/create" class="bg-green-600 px-2 py-2 rounded text-gray-100">Create</NuxtLink>
             <div class="mt-5 overflow-x-auto">
@@ -43,7 +43,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">{{ data.merk_name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ data.category_name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <NuxtLink :to="{ path: `/merk/update/${data['id']}`,  }" class="bg-red-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border border-yellow-600 rounded cursor-pointer mx-2">Edit</NuxtLink>
+                            <NuxtLink :to="{ path: `/product/update/${data['id']}`,  }" class="bg-red-400 hover:bg-yellow-600 text-white font-bold py-2 px-4 border border-yellow-600 rounded cursor-pointer mx-2">Edit</NuxtLink>
                         </td>
                     </tr>
                     
@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-
+    import { useToastStore } from '~/stores/useToastStore'
     definePageMeta({
         layout: 'base'
     });
@@ -77,6 +77,15 @@
         errorMessage,
         
     } = useFetchCustom('item/', {})
+    
+    const toastStore = useToastStore()
+    
+    watch(errorMessage, (newError) => {
+        if (newError) {
+            // Panggil Pinia untuk memunculkan toast
+            toastStore.addToast(newError, 'error')
+        }
+    })
 </script>
 
 <style lang="scss" scoped>

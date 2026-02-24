@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	attrDTO "rialfu/wallet/modules/attribute/dto"
 	attrRepo "rialfu/wallet/modules/attribute/repository"
 	dtoCat "rialfu/wallet/modules/category/dto"
 	cateRepo "rialfu/wallet/modules/category/repository"
@@ -22,10 +23,14 @@ import (
 
 type ItemService interface {
 	GetAll(ctx *gin.Context) (helpers.PaginateData[dto.ItemResponse], error)
+	GetItem(ctx context.Context, id string) (dto.ItemResponse, error)
+	GetItemVariants(ctx context.Context, id string) ([]dto.VariantResponse, error)
 	CreateOrUpItem(ctx context.Context, req dto.ItemCreateRequest) (dto.ItemResponse, error)
 	// Update(ctx context.Context, req dto.MerkUpdateRequest, id string) (dto.MerkResponse, error)
 	GetDropdownMerk(ctx context.Context, search string, page int) ([]dtoMerk.MerkDropdownDTO, error)
 	GetDropdownCategory(ctx context.Context, search string, page int) ([]dtoCat.CategoryDropdownDTO, error)
+	GetDropdownAttributeName(ctx context.Context, search string, page int) ([]attrDTO.AttributeNameResponse, error)
+	GetDropdownAttributeValueBasedParent(ctx context.Context, search string, page int, parentId string) ([]attrDTO.AttributeValueResponse, error)
 }
 
 type itemService struct {
@@ -34,6 +39,7 @@ type itemService struct {
 	mr                merkRepo.MerkRepository
 	cr                cateRepo.CategoryRepository
 	avr               attrRepo.AttributeValueRepository
+	anr               attrRepo.AttributeNameRepository
 	db                *gorm.DB
 	transactor        helpers.Transactor
 }
@@ -44,6 +50,7 @@ func NewItemService(
 	mr merkRepo.MerkRepository,
 	cr cateRepo.CategoryRepository,
 	avr attrRepo.AttributeValueRepository,
+	anr attrRepo.AttributeNameRepository,
 	db *gorm.DB,
 
 ) ItemService {
@@ -55,6 +62,7 @@ func NewItemService(
 		db:                db,
 		cr:                cr,
 		avr:               avr,
+		anr:               anr,
 		transactor:        tr,
 	}
 }
@@ -144,7 +152,66 @@ func (s *itemService) GetAll(ctx *gin.Context) (helpers.PaginateData[dto.ItemRes
 
 	return helpers.PaginateData[dto.ItemResponse]{Data: results, Limit: limit, Page: page, Total: total}, err
 }
-func (s *itemService) CreateItemVariant(ctx context.Context, req dto.ItemVariantCreateRequest) (dto.VariantResponse, error) {
+func (r *itemService) GetItem(ctx context.Context, id string) (dto.ItemResponse, error) {
+	var res dto.ItemResponse
+	data, isExist, err := r.itemRepository.GetByIdWithMerkAndCategory(ctx, id)
+	if err != nil {
+		return res, err
+	}
+	if isExist == false {
+		return res, constants.ErrDataNotFound
+	}
+	res.ID = data.ID
+	res.Name = data.Name
+	res.MerkID = data.Merk.ID
+	res.MerkName = data.Merk.Name
+	res.CategoryID = data.Category.ID
+	res.CategoryName = r.cleanPath(data.Category.Path)
+	return res, nil
+}
+func (r *itemService) GetItemVariants(ctx context.Context, id string) ([]dto.VariantResponse, error) {
+	var res []dto.VariantResponse
+	datas, err := r.variantRepository.GetByParentIdWithAttribute(ctx, id)
+	if err != nil {
+		return res, err
+	}
+	res = make([]dto.VariantResponse, 0, len(datas))
+	for _, data := range datas {
+		dataRes := dto.VariantResponse{
+			ID:          data.ID,
+			SKU:         data.SKU,
+			Description: data.Description,
+			ImageUrl:    data.ImageURL,
+			Stock:       uint32(data.Stock),
+		}
+		attributeMap := map[uint64]*dto.AttributeNameResponse{}
+		for _, val := range data.Attr {
+			attrName := val.AttributeValue.AttributeName
+			if _, ok := attributeMap[attrName.ID]; !ok {
+				attributeMap[attrName.ID] = &dto.AttributeNameResponse{
+					ID:   attrName.ID,
+					Name: attrName.AttributeName,
+				}
+			}
+			attributeMap[attrName.ID].Value =
+				append(
+					attributeMap[attrName.ID].Value,
+					dto.AttributeValueResponse{
+						ID:   val.AttributeValue.ID,
+						Name: val.AttributeValue.AttributeValue,
+					},
+				)
+		}
+		for _, v := range attributeMap {
+			dataRes.Attributes = append(dataRes.Attributes, *v)
+		}
+		res = append(res, dataRes)
+	}
+
+	return res, nil
+}
+
+func (s *itemService) CreateItemVariant(ctx context.Context, req *dto.ItemVariantCreateRequest) (dto.VariantResponse, error) {
 
 	var res dto.VariantResponse
 	err := s.transactor.WithTransaction(ctx, func(txCtx context.Context) error {
@@ -333,6 +400,38 @@ func (s *itemService) GetDropdownMerk(ctx context.Context, search string, page i
 		res[i] = dtoMerk.MerkDropdownDTO{
 			ID:   data.ID,
 			Name: data.Name,
+		}
+	}
+	return res, nil
+}
+func (s *itemService) GetDropdownAttributeName(ctx context.Context, search string, page int) ([]attrDTO.AttributeNameResponse, error) {
+	var res []attrDTO.AttributeNameResponse
+	datas, err := s.anr.ReadDropdown(ctx, search, 10, page)
+	if err != nil {
+		return res, err
+	}
+	res = make([]attrDTO.AttributeNameResponse, len(datas))
+
+	for i, data := range datas {
+		res[i] = attrDTO.AttributeNameResponse{
+			ID:   data.ID,
+			Name: data.AttributeName,
+		}
+	}
+	return res, nil
+}
+func (s *itemService) GetDropdownAttributeValueBasedParent(ctx context.Context, search string, page int, parentId string) ([]attrDTO.AttributeValueResponse, error) {
+	var res []attrDTO.AttributeValueResponse
+	datas, err := s.avr.ReadDropdownBasedParent(ctx, search, 10, page, parentId)
+	if err != nil {
+		return res, err
+	}
+	res = make([]attrDTO.AttributeValueResponse, len(datas))
+
+	for i, data := range datas {
+		res[i] = attrDTO.AttributeValueResponse{
+			ID:   data.ID,
+			Name: data.AttributeValue,
 		}
 	}
 	return res, nil

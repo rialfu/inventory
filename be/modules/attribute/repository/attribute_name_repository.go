@@ -18,6 +18,7 @@ type (
 		ReadAll(ctx context.Context, queryParam map[string][]string) ([]entities.AttributeName, int, int, int64, error)
 		GetByName(ctx context.Context, name string) (entities.AttributeName, bool, error)
 		GetByNameOrId(ctx context.Context, id string, name string) (entities.AttributeName, bool, error)
+		ReadDropdown(ctx context.Context, search string, limit int, page int) ([]entities.AttributeName, error)
 	}
 
 	attributeNameRepository struct {
@@ -103,5 +104,27 @@ func (r *attributeNameRepository) Update(ctx context.Context, data entities.Attr
 		return entities.AttributeName{}, err
 	}
 
+	return data, nil
+}
+func (r *attributeNameRepository) ReadDropdown(ctx context.Context, search string, limit int, page int) ([]entities.AttributeName, error) {
+	db := r.getDB(ctx)
+	if search != "" {
+		db = db.Where("attribute_name ILIKE ?", "%"+search+"%")
+	}
+	if limit > 100 {
+		limit = 100
+	} else if limit < 1 {
+		limit = 10
+	}
+	if page < 1 {
+		page = 1
+	}
+
+	db = db.Order("attribute_name asc")
+	var data []entities.AttributeName
+	offset := (page - 1) * limit
+	if err := db.WithContext(ctx).Limit(limit).Offset(offset).Find(&data).Error; err != nil {
+		return data, err
+	}
 	return data, nil
 }

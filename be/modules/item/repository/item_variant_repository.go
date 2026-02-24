@@ -22,6 +22,7 @@ type (
 		GetBySKUs(ctx context.Context, sku []string, isLock bool) ([]entities.ItemVariant, error)
 		GetByIdWithAttribute(ctx context.Context, id string) (entities.ItemVariant, bool, error)
 		SyncVariantAttribute(ctx context.Context, datas []entities.ItemVariantAttributeValue, variantID uint64) error
+		GetByParentIdWithAttribute(ctx context.Context, id string) ([]entities.ItemVariant, error)
 	}
 
 	itemVariantRepository struct {
@@ -79,6 +80,16 @@ func (r *itemVariantRepository) GetByIdWithAttribute(ctx context.Context, id str
 	}
 
 	return data, true, nil
+}
+
+func (r *itemVariantRepository) GetByParentIdWithAttribute(ctx context.Context, id string) ([]entities.ItemVariant, error) {
+	var data []entities.ItemVariant
+	db := r.getDB(ctx)
+	db = db.Preload("Attr").Preload("Attr.AttributeValue").Preload("Attr.AttributeValue.AttributeName")
+	if err := db.WithContext(ctx).Where("item_id = ?", id).Find(&data).Error; err != nil {
+		return data, err
+	}
+	return data, nil
 }
 
 func (r *itemVariantRepository) GetByNameOrId(ctx context.Context, id string, name string) (entities.ItemVariant, bool, error) {

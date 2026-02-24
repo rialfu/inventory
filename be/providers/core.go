@@ -55,7 +55,7 @@ func RegisterDependencies(injector *do.Injector) {
 	catService := cateService.NewCategoryService(catRepo, db)
 	ms := merkService.NewMerkService(mr, db)
 	as := attrService.NewAttributeService(anr, avr, db)
-	is := itemService.NewItemService(ir, ivr, mr, catRepo, avr, db)
+	is := itemService.NewItemService(ir, ivr, mr, catRepo, avr, anr, db)
 	do.Provide(injector, func(i *do.Injector) (userController.UserController, error) {
 		return userController.NewUserController(i, userService), nil
 	})

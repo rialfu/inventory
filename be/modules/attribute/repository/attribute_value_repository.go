@@ -22,6 +22,7 @@ type (
 		GetByIds(ctx context.Context, id []string) ([]entities.AttributeValue, error)
 		GetByIdsWithAttrName(ctx context.Context, id []string) ([]entities.AttributeValue, error)
 		GetByIdWithAttrName(ctx context.Context, id string) (entities.AttributeValue, bool, error)
+		ReadDropdownBasedParent(ctx context.Context, search string, limit int, page int, parentID string) ([]entities.AttributeValue, error)
 	}
 
 	attributeValueRepository struct {
@@ -156,9 +157,28 @@ func (r *attributeValueRepository) Update(ctx context.Context, data entities.Att
 	if err := db.WithContext(ctx).Updates(&data).Error; err != nil {
 		return entities.AttributeValue{}, err
 	}
-	// var res entities.AttributeValue
-	// if err := db.Preload("AttributeName").First(&res, data.ID).Error; err != nil {
-	// 	return data, nil
-	// }
+	return data, nil
+}
+func (r *attributeValueRepository) ReadDropdownBasedParent(ctx context.Context, search string, limit int, page int, parentID string) ([]entities.AttributeValue, error) {
+	db := r.getDB(ctx)
+	if search != "" {
+		db = db.Where("attribute_value ILIKE ?", "%"+search+"%")
+	}
+	db = db.Where("attribute_name_id = ?", parentID)
+	if limit > 100 {
+		limit = 100
+	} else if limit < 1 {
+		limit = 10
+	}
+	if page < 1 {
+		page = 1
+	}
+
+	db = db.Order("attribute_value asc")
+	var data []entities.AttributeValue
+	offset := (page - 1) * limit
+	if err := db.WithContext(ctx).Limit(limit).Offset(offset).Find(&data).Error; err != nil {
+		return data, err
+	}
 	return data, nil
 }

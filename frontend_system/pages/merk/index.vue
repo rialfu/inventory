@@ -2,10 +2,10 @@
     <div>
         <h1 class="text-3xl font-bold mb-6 text-slate-600">Merk</h1>
         <div class="bg-white  p-6 rounded-lg shadow-md">
-            <BaseToast
+            <!-- <BaseToast
                 :show="errorMessage !== '' && errorMessage !== null"
                 :message="errorMessage"
-            />
+            /> -->
             <h3 class="text-lg font-semibold text-gray-700 mb-4">List data</h3>
             <NuxtLink to="/merk/create" class="bg-green-600 px-2 py-2 rounded text-gray-100">Create</NuxtLink>
             <div class="mt-5 overflow-x-auto">
@@ -56,7 +56,7 @@
 </template>
 
 <script setup>
-
+    import { useToastStore } from '~/stores/useToastStore'
     definePageMeta({
         layout: 'base'
     });
@@ -69,6 +69,15 @@
         errorMessage,
         
     } = useFetchCustom('merk/', {})
+    
+    const toastStore = useToastStore()
+    
+    watch(errorMessage, (newError) => {
+        if (newError) {
+            // Panggil Pinia untuk memunculkan toast
+            toastStore.addToast(newError, 'error')
+        }
+    })
 </script>
 
 <style lang="scss" scoped>
